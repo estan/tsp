@@ -2,8 +2,10 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
+#include <cassert>
 
 const int MAX_VERTICES = 1000;
+const int NO_PARENT = -1;
 
 typedef uint32_t Graph[MAX_VERTICES][MAX_VERTICES];
 
@@ -29,14 +31,13 @@ int readGraph(std::istream& in, Graph G) {
     return N;
 }
 
-// Calculate and print MST using Prim's algorithm.
-void primMST(Graph G, int N) {
+// Calculate MST rooted at 0 using Prim's algorithm.
+void primMST(Graph G, int parent[MAX_VERTICES], int N) {
     bool inMST[MAX_VERTICES];
     uint32_t cost[MAX_VERTICES];
-    int parent[MAX_VERTICES];
 
     std::fill(inMST, inMST + N, false);
-    std::fill(parent, parent + N, -1);
+    std::fill(parent, parent + N, NO_PARENT);
     std::fill(cost, cost + N, std::numeric_limits<uint32_t>::max());
     cost[0] = 0;
 
@@ -62,21 +63,46 @@ void primMST(Graph G, int N) {
             }
         }
     }
+}
+
+// Test function for the primMST function.
+void testPrimMST() {
+    // Run the function on a small test case.
+    int N = 5;
+    Graph G = {{0, 2, 0, 6, 0},
+               {2, 0, 3, 8, 5},
+               {0, 3, 0, 0, 7},
+               {6, 8, 0, 0, 9},
+               {0, 5, 7, 9, 0}};
+    int parent[MAX_VERTICES];
+    std::fill(parent, parent + N, 42); // Just in case.
+
+    primMST(G, parent, N);
+
+    // Check results.
+    assert(parent[0] == NO_PARENT);
+    assert(parent[1] == 0);
+    assert(parent[2] == 1);
+    assert(parent[3] == 0);
+    assert(parent[4] == 1);
+}
+
+int main(void) {
+    // Run a small test case first.
+    testPrimMST();
+
+    // Read graph from standard input.
+    Graph G;
+    int N = readGraph(std::cin, G);
+
+    // Calculate and print MST.
+    int parent[MAX_VERTICES];
+    primMST(G, parent, N);
 
     // Print MST.
     for (int v = 1; v < N; ++v) {
         std::cout << v << " " << parent[v] << std::endl;
     }
-}
-
-int main(void) {
-
-    // Read graph.
-    Graph G;
-    int N = readGraph(std::cin, G);
-
-    // Calculate and print MST.
-    primMST(G, N);
 
     return 0;
 }
