@@ -5,7 +5,7 @@
 #include <cassert>
 
 const int MAX_VERTICES = 1000;
-const int NO_PARENT = -1;
+const int NO_VERTEX = -1;
 
 typedef uint32_t Graph[MAX_VERTICES][MAX_VERTICES];
 
@@ -37,13 +37,13 @@ void primMST(Graph G, int parent[MAX_VERTICES], int N) {
     uint32_t cost[MAX_VERTICES];
 
     std::fill(inMST, inMST + N, false);
-    std::fill(parent, parent + N, NO_PARENT);
+    std::fill(parent, parent + N, NO_VERTEX);
     std::fill(cost, cost + N, std::numeric_limits<uint32_t>::max());
     cost[0] = 0;
 
     for (int added = 0; added < N - 1; ++added) {
         // Find lowest cost vertex not in MST and add it to MST.
-        int u = -1;
+        int u = NO_VERTEX;
         uint32_t c = std::numeric_limits<int>::max();
         for (int v = 0; v < N; ++v) {
             if (cost[v] < c && !inMST[v]) {
@@ -80,7 +80,7 @@ void testPrimMST() {
     primMST(G, parent, N);
 
     // Check results.
-    assert(parent[0] == NO_PARENT);
+    assert(parent[0] == NO_VERTEX);
     assert(parent[1] == 0);
     assert(parent[2] == 1);
     assert(parent[3] == 0);
