@@ -7,30 +7,30 @@
 #include <cmath>
 #include <cassert>
 
-#include "graph.h"
+#include "matrix.h"
+
+using namespace std;
 
 /**
  * Calculate minimum spanning tree using Prim's algorithm.
  *
- * @param G Input graph.
- * @param M Minimum spanning tree of G.
- * @param N Number of vertices in G.
+ * @param d Distance matrix.
+ * @param MST Minimum spanning tree of G.
+ * @param N Number of cities.
  */
-void primMST(Graph G, Graph M, std::size_t N) {
-    std::vector<bool> inMST(N);
-    std::vector<uint32_t> cost(N);
-    std::vector<uint32_t> parent(N);
-
-    std::fill(inMST.begin(), inMST.end(), false);
-    std::fill(parent.begin(), parent.end(), NO_VERTEX);
-    std::fill(cost.begin(), cost.end(), std::numeric_limits<uint32_t>::max());
+void primMST(uint32_t **d, uint32_t **MST, size_t N) {
+    vector<bool> inMST(N);
+    vector<uint32_t> cost(N);
+    vector<uint32_t> parent(N);
+    fill(inMST.begin(), inMST.end(), false);
+    fill(cost.begin(), cost.end(), numeric_limits<uint32_t>::max());
     cost[0] = 0;
 
-    for (std::size_t added = 0; added < N - 1; ++added) {
-        // Find lowest cost vertex not in MST and add it to MST.
-        std::size_t u = NO_VERTEX;
-        uint32_t c = std::numeric_limits<int>::max();
-        for (std::size_t v = 0; v < N; ++v) {
+    for (size_t added = 0; added < N - 1; ++added) {
+        // Find lowest cost city not in MST and add it to MST.
+        size_t u = 0;
+        uint32_t c = numeric_limits<int>::max();
+        for (size_t v = 0; v < N; ++v) {
             if (cost[v] < c && !inMST[v]) {
                 u = v;
                 c = cost[v];
@@ -39,43 +39,43 @@ void primMST(Graph G, Graph M, std::size_t N) {
         inMST[u] = true;
 
         // For each neighbor v of u not already in MST.
-        for (std::size_t v = 0; v < N; ++v) {
-            if (0 < G[u][v] && G[u][v] < cost[v] && !inMST[v]) {
+        for (size_t v = 0; v < N; ++v) {
+            if (0 < d[u][v] && d[u][v] < cost[v] && !inMST[v]) {
                 // Distance from u to v is lower than current cost of v, so mark u
                 // as parent of v and set cost of v to the distance from u to v.
                 parent[v] = u;
-                cost[v] = G[u][v];
+                cost[v] = d[u][v];
             }
         }
     }
 
-    // Build MST graph.
-    for (std::size_t v = 1; v < N; ++v) {
-        M[parent[v]][v] = G[parent[v]][v];
+    // Build MST matrix.
+    for (size_t v = 1; v < N; ++v) {
+        MST[parent[v]][v] = d[parent[v]][v];
     }
 }
 
 /**
- * Calculates the 2-approximation of TSP from an MST.
+ * Calculates a 2-approximation TSP tour from an MST.
  *
- * @param M Input MST.
- * @param N Number of vertices in M.
- * @return A 2-approximation of the TSP.
+ * @param MST Input MST.
+ * @param N Number of cities.
+ * @return 2-approximation of the TSP.
  */
-std::vector<uint32_t> twoApprox(Graph M, std::size_t N) {
-    std::vector<uint32_t> tour;
-    std::vector<bool> visited(N);
-    std::stack<int> stack;
+vector<size_t> twoApprox(uint32_t **MST, size_t N) {
+    vector<size_t> tour;
+    vector<bool> visited(N);
+    stack<int> stack;
     stack.push(0);
 
     while (tour.size() < N) {
-        std::size_t u = stack.top();
+        size_t u = stack.top();
         stack.pop();
         if (!visited[u]) {
             tour.push_back(u);
             visited[u] = true;
-            for (std::size_t v = 0; v < N; ++v) {
-                if (M[u][v] != 0) {
+            for (size_t v = 0; v < N; ++v) {
+                if (MST[u][v] != 0) {
                     stack.push(v);
                 }
             }
@@ -86,46 +86,46 @@ std::vector<uint32_t> twoApprox(Graph M, std::size_t N) {
 }
 
 /**
- * Calculate nearest neighbors graph from a given graph.
+ * Calculate nearest neighbors matrix from a distance matrix.
  *
- * @param G Input graph.
- * @param N Number of vertices in G.
- * @return A matrix where row i contains the the neighbors of i
+ * @param d Distance matrix.
+ * @param N Number of cities.
+ * @return A matrix where row i contains the neighbors of city i
  *         in ascending order of proximity.
  */
-Graph createNeighborsGraph(Graph G, std::size_t N) {
-    Graph nG = newGraph(N);
-    for (std::size_t i = 0; i < N; ++i) {
-        for (std::size_t j = 0; j < N; ++j) {
-            nG[i][j] = j;
+uint32_t **createNeighborsMatrix(uint32_t **d, size_t N) {
+    uint32_t **neighbor = newMatrix(N);
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            neighbor[i][j] = j;
         }
-        std::sort(nG[i], nG[i] + N, [&](std::size_t j1, std::size_t j2) {
-            return G[i][j1] != 0 && G[i][j1] < G[i][j2];
+        sort(neighbor[i], neighbor[i] + N, [&](size_t j1, size_t j2) {
+            return d[i][j1] != 0 && d[i][j1] < d[i][j2];
         });
     }
-    return nG;
+    return neighbor;
 }
 
 /**
  * Reverse a segment of a tour.
  *
  * This functions reverses the segment [start, end] of the given
- * tour and updates the pos vector accordingly.
+ * tour and updates the position vector accordingly.
  *
  * @param tour The input tour.
  * @param start Start index of segment to reverse.
  * @param end End index of segment to reverse.
- * @param pos Vector containing positions of cities in the tour, will
- *            be updated to reflect the reversal.
+ * @param position Vector containing positions of cities in the tour, will
+ *                 be updated to reflect the reversal.
  */
 template<typename T>
-void reverse(std::vector<T> &tour, std::size_t start, std::size_t end, std::vector<std::size_t>& pos) {
-    const std::size_t N = tour.size();
+void reverse(vector<T> &tour, size_t start, size_t end, vector<size_t>& position) {
+    const size_t N = tour.size();
     bool wrapped = start > end;
     while ((!wrapped && start < end) || (wrapped && end < start)) {
-        std::swap(tour[start], tour[end]);
-        pos[tour[start]] = start;
-        pos[tour[end]] = end;
+        swap(tour[start], tour[end]);
+        position[tour[start]] = start;
+        position[tour[end]] = end;
         ++start;
         --end;
         if (start == N) {
@@ -140,49 +140,98 @@ void reverse(std::vector<T> &tour, std::size_t start, std::size_t end, std::vect
 }
 
 /**
- * Perform a 2-opt pass on the given tour.
+ * Reverse a segment of a tour.
+ *
+ * This functions reverses the segment [start, end] of the given tour.
+ *
+ * @param tour The input tour.
+ * @param start Start index of segment to reverse.
+ * @param end End index of segment to reverse.
+ */
+void reverse(vector<size_t> &tour, size_t start, size_t end) {
+    const size_t N = tour.size();
+    while (start < end) {
+        swap(tour[start % N], tour[end % N]);
+        ++start;
+        --end;
+    }
+}
+
+/**
+ * Peforms a 2-opt pass on the given tour.
+ *
+ * This functions uses the slow and stupid O(N^2) approach.
  *
  * @param tour The tour to optimize.
- * @param G The input graph.
- * @param nG Nearest neighbor graph.
- * @param N Number of vertices in G.
+ * @param d Distance matrix.
  */
-void twoOpt(std::vector<uint32_t>& tour, Graph G, Graph nG, std::size_t N) {
-    // The smallest possible edge in a tour (minimum city distance in G).
-    uint32_t min = std::numeric_limits<std::size_t>::max();
-    for (std::size_t i = 0; i < N; ++i) {
-        for (std::size_t j = 0; j < N; ++j) {
-            min = std::min(min, G[i][j]);
+void twoOptSlow(vector<size_t>& tour, uint32_t **d) {
+    const size_t N = tour.size();
+    size_t u, v, w, z;
+    for (size_t i = 0; i < N; ++i) {
+        u = tour[i];
+        v = tour[(i + 1) % N];
+        for (size_t j = i + 2; (j + 1) % N != i; ++j) {
+            w = tour[j % N];
+            z = tour[(j + 1) % N];
+            if (d[u][w] + d[z][v] < d[u][v] + d[w][z]) {
+                //   --u w--        --u-w->
+                //      X     ===>
+                //   <-z v->        <-z-v--
+                reverse(tour, i + 1, j);
+            }
+        }
+    }
+}
+
+/**
+ * Perform a 2-opt pass on the given tour.
+ *
+ * This function uses the fast approach described on page 12 of "Large-Step
+ * Markov Chains for the Traveling Salesman Problem" (Martin/Otto/Felten, 1991)
+ *
+ * @param tour The tour to optimize.
+ * @param d Distance matrix.
+ * @param neighbor Nearest neighbors matrix.
+ * @param N Number of cities.
+ */
+void twoOpt(vector<size_t>& tour, uint32_t **d, uint32_t **neighbor, size_t N) {
+    // The shortest possible link in a tour (shortest distance in G).
+    uint32_t min = numeric_limits<size_t>::max();
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            if (i != j)
+                min = std::min(min, d[i][j]);
         }
     }
 
     // Maximum distance in current tour.
-    uint32_t max = std::numeric_limits<std::size_t>::min();
-    for (std::size_t i = 0, j = 1; j < N; ++i, ++j) {
-        max = std::max(max, G[tour[i]][tour[j]]);
+    uint32_t max = numeric_limits<size_t>::min();
+    for (size_t i = 0, j = 1; j < N; ++i, ++j) {
+        max = std::max(max, d[tour[i]][tour[j]]);
     }
-    max = std::max(max, G[tour[N - 1]][tour[0]]);
+    max = std::max(max, d[tour[N - 1]][tour[0]]);
 
-    // Tour position vector (pos[i] = j means that i is the j:th city in tour)
-    std::vector<std::size_t> pos(N);
-    for (std::size_t n = 0; n < N; ++n) {
-        pos[tour[n]] = n;
+    // Tour position vector (position[i] = j means i is the j:th city in tour)
+    vector<size_t> position(N);
+    for (size_t n = 0; n < N; ++n) {
+        position[tour[n]] = n;
     }
 
-    for (std::size_t n1 = 0; n1 < N; ++n1) {
-        std::size_t m1 = (n1 - 1 + N) % N;
-        for (std::size_t j2 = 0; j2 < N; ++j2) {
-            std::size_t c2 = nG[n1][j2]; // c2 is the j2:th closest city to n1.
-            std::size_t n2 = pos[c2];    // n2 is the position of c2 in the tour.
-            std::size_t m2 = (n2 - 1 + N) % N;
-            if (G[tour[n1]][tour[n2]] + min > G[tour[m1]][tour[n1]] + max) {
+    for (size_t n1 = 0; n1 < N; ++n1) {
+        size_t m1 = (n1 - 1 + N) % N;
+        for (size_t j2 = 0; j2 < N - 1; ++j2) {
+            // n2 is the tour position of the j2:th neighbor of the n1:th city in the tour.
+            size_t n2 = position[neighbor[n1][j2]];
+            size_t m2 = (n2 - 1 + N) % N;
+            if (d[tour[n1]][tour[n2]] + min > d[tour[m1]][tour[n1]] + max) {
                 break; // Go to next n1.
             }
             if (m1 == m2 || n1 == n2) {
                 continue; // Don't consider connecting a city with itself.
             }
-            if (G[tour[m2]][tour[m1]] + G[tour[n2]][tour[n1]] <
-                G[tour[m1]][tour[n1]] + G[tour[m2]][tour[n2]]) {
+            if (d[tour[m2]][tour[m1]] + d[tour[n2]][tour[n1]] <
+                d[tour[m1]][tour[n1]] + d[tour[m2]][tour[n2]]) {
                 /* We have the following situation:
                  *
                  * --m1 m2--      <-m1-m2--
@@ -193,10 +242,10 @@ void twoOpt(std::vector<uint32_t>& tour, Graph G, Graph nG, std::size_t N) {
                  * m1->n1 and m2->n2. So simply reverse the order of the sub-tour
                  * n2...m1.
                  */
-                reverse(tour, n2, m1, pos);
+                reverse(tour, n2, m1, position);
 
                 // Update max link.
-                max = std::max(max, std::max(G[tour[m2]][tour[m1]], G[tour[n2]][tour[n1]]));
+                max = std::max(max, std::max(d[tour[m2]][tour[m1]], d[tour[n2]][tour[n1]]));
 
                 break; // Go to next n1.
             }
@@ -205,49 +254,49 @@ void twoOpt(std::vector<uint32_t>& tour, Graph G, Graph nG, std::size_t N) {
 }
 
 /**
- * Returns the length of the given tour of G.
+ * Returns the total length of a tour.
+ *
+ * @param tour The input tour.
+ * @param d Distance matrix.
  */
-uint64_t length(const std::vector<uint32_t>& tour, Graph G) {
+uint64_t length(const vector<size_t>& tour, uint32_t **d) {
     uint64_t length = 0;
-    for (std::size_t i = 0; i < tour.size() - 1; ++i) {
-        length += G[tour[i]][tour[i + 1]];
+    for (size_t i = 0; i < tour.size() - 1; ++i) {
+        length += d[tour[i]][tour[i + 1]];
     }
-    length += G[tour[tour.size() - 1]][tour[0]];
+    length += d[tour[tour.size() - 1]][tour[0]];
     return length;
 }
 
 int main(int argc, char *argv[]) {
-    // Read graph from standard input.
-    std::size_t N;
-    Graph G = readGraph(std::cin, &N);
+    // Create distance matrix from standard input.
+    size_t N;
+    uint32_t **d = createDistanceMatrix(cin, &N);
 
-    // Calculate MST.
-    Graph M = newGraph(N);
-    primMST(G, M, N);
-
-    // Calculate 2-approximation.
-    std::vector<uint32_t> tour = twoApprox(M, N);
+    // Calculate MST and 2-approximation.
+    uint32_t **MST = newMatrix(N);
+    primMST(d, MST, N);
+    vector<size_t> tour = twoApprox(MST, N);
+    deleteMatrix(MST, N);
 
     // Optimize using 2-opt.
-    if (argc == 2 && std::string(argv[1]).compare("-2") == 0) {
-        Graph nG = createNeighborsGraph(G, N);
-        uint64_t oldLength = std::numeric_limits<uint64_t>::max();
-        uint64_t newLength = length(tour, G);
-        do {
-            twoOpt(tour, G, nG, N);
-            oldLength = newLength;
-            newLength = length(tour, G);
-        } while (newLength < oldLength);
-        deleteGraph(nG, N);
-    }
+    uint32_t **neighbor = createNeighborsMatrix(d, N);
+    uint64_t oldLength = numeric_limits<uint64_t>::max();
+    uint64_t newLength = length(tour, d);
+    do {
+        //twoOpt(tour, d, neighbor, N);
+        twoOptSlow(tour, d);
+        oldLength = newLength;
+        newLength = length(tour, d);
+    } while (newLength < oldLength);
+    deleteMatrix(neighbor, N);
 
     // Print tour.
     for (auto city : tour) {
-        std::cout << city << std::endl;
+        cout << city << endl;
     }
 
-    deleteGraph(G, N);
-    deleteGraph(M, N);
+    deleteMatrix(d, N);
 
     return 0;
 }
