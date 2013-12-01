@@ -2,73 +2,43 @@
 #define MATRIX_H
 
 #include <vector>
-#include <cmath>
 #include <cstdint>
 
 /**
- * Create a new N x N matrix and return it.
+ * A very simple N x N matrix class.
  */
-uint32_t **newMatrix(std::size_t N) {
-    uint32_t **M = new uint32_t*[N];
-    for (std::size_t i = 0; i < N; ++i) {
-        M[i] = new uint32_t[N];
-        std::fill(M[i], M[i] + N, 0);
-    }
-    return M;
-}
+template<typename T>
+class Matrix {
+public:
+    Matrix(std::size_t N) : m_data(N * N, T()), m_size(N) {}
 
-/**
- * Delete the N x N matrix M.
- */
-void deleteMatrix(uint32_t **M, std::size_t N) {
-    for (std::size_t i = 0; i < N; ++i) {
-        delete M[i];
-    }
-    delete[] M;
-}
-
-/**
- * Create a distance matrix from an input stream and return it.
- *
- * @param in Input stream.
- * @param N The number of cities (output).
- * @return The read distance matrix.
- */
-uint32_t **createDistanceMatrix(std::istream& in, std::size_t *N) {
-    // Read number of vertices.
-    in >> *N;
-
-    // Read vertex coordinates.
-    std::vector<double> x(*N);
-    std::vector<double> y(*N);
-    for (std::size_t i = 0; i < *N; ++i) {
-        in >> x[i] >> y[i];
+    inline T* operator[](int i) {
+        return &m_data[i * m_size];
     }
 
-    // Calculate distance matrix.
-    uint32_t **d = newMatrix(*N);
-    for (std::size_t i = 0; i < *N; ++i) {
-        for (std::size_t j = 0; j < *N; ++j) {
-            d[i][j] = std::round(std::sqrt(std::pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2)));
+    inline T const* operator[](int i) const {
+        return &m_data[i * m_size];
+    }
+
+    inline std::size_t size() const {
+        return m_size;
+    }
+
+private:
+    std::vector<T> m_data;
+    std::size_t m_size;
+};
+
+// Stream output operator.
+template<typename T>
+std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
+    for (std::size_t i = 0; i < matrix.size(); ++i) {
+        for (std::size_t j = 0; j < matrix.size(); ++j) {
+            os << std::left << std::setw(3) << matrix[i][j];
         }
+        os << std::endl;
     }
-
-    return d;
-}
-
-/**
- * Prints the N x N matrix M to standard output.
- *
- * @param M The matrix to print.
- * @param N Number of vertices in matrix.
- */
-void printMatrix(uint32_t **M, std::size_t N) {
-    for (std::size_t i = 0; i < N; ++i) {
-        for (std::size_t j = 0; j < N; ++j) {
-            std::cout << std::left << std::setw(3) << M[i][j];
-        }
-        std::cout << std::endl;
-    }
+    return os;
 }
 
 #endif // MATRIX_H

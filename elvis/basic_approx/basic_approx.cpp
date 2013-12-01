@@ -5,6 +5,7 @@
 #include <limits>
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cassert>
 
 #include "matrix.h"
@@ -12,13 +13,41 @@
 using namespace std;
 
 /**
+ * Create a distance matrix from an input stream and return it.
+ *
+ * @param in Input stream.
+ * @return The read distance matrix.
+ */
+Matrix<uint32_t> createDistanceMatrix(std::istream& in) {
+    // Read vertex coordinates.
+    std::size_t N;
+    in >> N;
+    std::vector<double> x(N);
+    std::vector<double> y(N);
+    for (std::size_t i = 0; i < N; ++i) {
+        in >> x[i] >> y[i];
+    }
+
+    // Calculate distance matrix.
+    Matrix<uint32_t> d(N);
+    for (std::size_t i = 0; i < N; ++i) {
+        for (std::size_t j = 0; j < N; ++j) {
+            d[i][j] = std::round(std::sqrt(std::pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2)));
+        }
+    }
+
+    return d;
+}
+
+/**
  * Calculate minimum spanning tree using Prim's algorithm.
  *
  * @param d Distance matrix.
- * @param MST Minimum spanning tree of G.
- * @param N Number of cities.
+ * @return The minimum spanning tree.
  */
-void primMST(uint32_t **d, uint32_t **MST, size_t N) {
+Matrix<uint32_t> primMST(const Matrix<uint32_t>& d) {
+    size_t N = d.size();
+
     vector<bool> inMST(N);
     vector<uint32_t> cost(N);
     vector<uint32_t> parent(N);
@@ -50,19 +79,23 @@ void primMST(uint32_t **d, uint32_t **MST, size_t N) {
     }
 
     // Build MST matrix.
+    Matrix<uint32_t> MST(N);
     for (size_t v = 1; v < N; ++v) {
         MST[parent[v]][v] = d[parent[v]][v];
     }
+
+    return MST;
 }
 
 /**
- * Calculates a 2-approximation TSP tour from an MST.
+ * Calculates a 2-approximation TSP tour from a minimum spanning tree.
  *
- * @param MST Input MST.
- * @param N Number of cities.
- * @return 2-approximation of the TSP.
+ * @param MST Input minimum spanning tree.
+ * @return 2-approximation TSP tour.
  */
-vector<size_t> twoApprox(uint32_t **MST, size_t N) {
+vector<size_t> twoApprox(const Matrix<uint32_t>& MST) {
+    size_t N = MST.size();
+
     vector<size_t> tour;
     vector<bool> visited(N);
     stack<int> stack;
@@ -89,12 +122,12 @@ vector<size_t> twoApprox(uint32_t **MST, size_t N) {
  * Calculate nearest neighbors matrix from a distance matrix.
  *
  * @param d Distance matrix.
- * @param N Number of cities.
  * @return A matrix where row i contains the neighbors of city i
  *         in ascending order of proximity.
  */
-uint32_t **createNeighborsMatrix(uint32_t **d, size_t N) {
-    uint32_t **neighbor = newMatrix(N);
+Matrix<uint32_t> createNeighborsMatrix(const Matrix<uint32_t>& d) {
+    size_t N = d.size();
+    Matrix<uint32_t> neighbor(N);
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
             neighbor[i][j] = j;
@@ -120,7 +153,7 @@ uint32_t **createNeighborsMatrix(uint32_t **d, size_t N) {
  */
 template<typename T>
 void reverse(vector<T> &tour, size_t start, size_t end, vector<size_t>& position) {
-    const size_t N = tour.size();
+    size_t N = tour.size();
     bool wrapped = start > end;
     while ((!wrapped && start < end) || (wrapped && end < start)) {
         swap(tour[start], tour[end]);
@@ -165,8 +198,8 @@ void reverse(vector<size_t> &tour, size_t start, size_t end) {
  * @param tour The tour to optimize.
  * @param d Distance matrix.
  */
-void twoOptSlow(vector<size_t>& tour, uint32_t **d) {
-    const size_t N = tour.size();
+void twoOptSlow(vector<size_t>& tour, const Matrix<uint32_t>& d) {
+    size_t N = tour.size();
     size_t u, v, w, z;
     for (size_t i = 0; i < N; ++i) {
         u = tour[i];
@@ -193,9 +226,10 @@ void twoOptSlow(vector<size_t>& tour, uint32_t **d) {
  * @param tour The tour to optimize.
  * @param d Distance matrix.
  * @param neighbor Nearest neighbors matrix.
- * @param N Number of cities.
  */
-void twoOpt(vector<size_t>& tour, uint32_t **d, uint32_t **neighbor, size_t N) {
+void twoOpt(vector<size_t>& tour, const Matrix<uint32_t>& d, const Matrix<uint32_t>& neighbor) {
+    size_t N = d.size();
+
     // The shortest possible link in a tour (shortest distance in G).
     uint32_t min = numeric_limits<size_t>::max();
     for (size_t i = 0; i < N; ++i) {
@@ -259,7 +293,7 @@ void twoOpt(vector<size_t>& tour, uint32_t **d, uint32_t **neighbor, size_t N) {
  * @param tour The input tour.
  * @param d Distance matrix.
  */
-uint64_t length(const vector<size_t>& tour, uint32_t **d) {
+uint64_t length(const vector<size_t>& tour, const Matrix<uint32_t>& d) {
     uint64_t length = 0;
     for (size_t i = 0; i < tour.size() - 1; ++i) {
         length += d[tour[i]][tour[i + 1]];
@@ -270,33 +304,27 @@ uint64_t length(const vector<size_t>& tour, uint32_t **d) {
 
 int main(int argc, char *argv[]) {
     // Create distance matrix from standard input.
-    size_t N;
-    uint32_t **d = createDistanceMatrix(cin, &N);
+    Matrix<uint32_t> d = createDistanceMatrix(cin);
 
     // Calculate MST and 2-approximation.
-    uint32_t **MST = newMatrix(N);
-    primMST(d, MST, N);
-    vector<size_t> tour = twoApprox(MST, N);
-    deleteMatrix(MST, N);
+    Matrix<uint32_t> MST = primMST(d);
+    vector<size_t> tour = twoApprox(MST);
 
     // Optimize using 2-opt.
-    uint32_t **neighbor = createNeighborsMatrix(d, N);
+    Matrix<uint32_t> neighbor = createNeighborsMatrix(d);
     uint64_t oldLength = numeric_limits<uint64_t>::max();
     uint64_t newLength = length(tour, d);
     do {
-        //twoOpt(tour, d, neighbor, N);
+        //twoOpt(tour, d, neighbor);
         twoOptSlow(tour, d);
         oldLength = newLength;
         newLength = length(tour, d);
     } while (newLength < oldLength);
-    deleteMatrix(neighbor, N);
 
     // Print tour.
     for (auto city : tour) {
         cout << city << endl;
     }
-
-    deleteMatrix(d, N);
 
     return 0;
 }
