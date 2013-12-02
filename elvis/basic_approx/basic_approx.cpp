@@ -219,6 +219,7 @@ uint32_t maxDistance(const vector<uint16_t>& tour, const Matrix<uint32_t>& d) {
  *
  * @param tour The input tour.
  * @param d Distance matrix.
+ * @return The total length of the tour.
  */
 uint64_t length(const vector<uint32_t>& tour, const Matrix<uint32_t>& d) {
     size_t N = tour.size();
