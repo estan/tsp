@@ -10,7 +10,21 @@
 
 #include "matrix.h"
 
+#ifdef DEBUG
+    #define LOG(x) std::cerr << x
+#else
+    #define LOG(x)
+#endif
+
 using namespace std;
+
+// Output stream operator (convenient for printing tours).
+ostream& operator<<(ostream& os, const vector<size_t>& v) {
+    for (auto e : v)
+        os << e << ' ';
+    os << endl;
+    return os;
+}
 
 /**
  * Create a distance matrix from an input stream and return it.
@@ -18,21 +32,21 @@ using namespace std;
  * @param in Input stream.
  * @return The read distance matrix.
  */
-Matrix<uint32_t> createDistanceMatrix(std::istream& in) {
+Matrix<uint32_t> createDistanceMatrix(istream& in) {
     // Read vertex coordinates.
-    std::size_t N;
+    size_t N;
     in >> N;
-    std::vector<double> x(N);
-    std::vector<double> y(N);
-    for (std::size_t i = 0; i < N; ++i) {
+    vector<double> x(N);
+    vector<double> y(N);
+    for (size_t i = 0; i < N; ++i) {
         in >> x[i] >> y[i];
     }
 
     // Calculate distance matrix.
     Matrix<uint32_t> d(N);
-    for (std::size_t i = 0; i < N; ++i) {
-        for (std::size_t j = 0; j < N; ++j) {
-            d[i][j] = std::round(std::sqrt(std::pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2)));
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            d[i][j] = round(sqrt(pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2)));
         }
     }
 
@@ -133,43 +147,10 @@ Matrix<uint32_t> createNeighborsMatrix(const Matrix<uint32_t>& d) {
             neighbor[i][j] = j;
         }
         sort(neighbor[i], neighbor[i] + N, [&](size_t j1, size_t j2) {
-            return d[i][j1] != 0 && d[i][j1] < d[i][j2];
+            return i != j1 && (i == j2 || d[i][j1] < d[i][j2]);
         });
     }
     return neighbor;
-}
-
-/**
- * Reverse a segment of a tour.
- *
- * This functions reverses the segment [start, end] of the given
- * tour and updates the position vector accordingly.
- *
- * @param tour The input tour.
- * @param start Start index of segment to reverse.
- * @param end End index of segment to reverse.
- * @param position Vector containing positions of cities in the tour, will
- *                 be updated to reflect the reversal.
- */
-template<typename T>
-void reverse(vector<T> &tour, size_t start, size_t end, vector<size_t>& position) {
-    size_t N = tour.size();
-    bool wrapped = start > end;
-    while ((!wrapped && start < end) || (wrapped && end < start)) {
-        swap(tour[start], tour[end]);
-        position[tour[start]] = start;
-        position[tour[end]] = end;
-        ++start;
-        --end;
-        if (start == N) {
-            wrapped = !wrapped;
-            start = 0;
-        }
-        if (end == -1) {
-            wrapped = !wrapped;
-            end = N - 1;
-        }
-    }
 }
 
 /**
@@ -191,6 +172,32 @@ void reverse(vector<size_t> &tour, size_t start, size_t end) {
 }
 
 /**
+ * Reverse a segment of a tour.
+ *
+ * This functions reverses the segment [start, end] of the given
+ * tour and updates the position vector accordingly.
+ *
+ * @param tour The input tour.
+ * @param start Start index of segment to reverse.
+ * @param end End index of segment to reverse.
+ * @param position Vector containing positions of cities in the tour, will
+ *                 be updated to reflect the reversal.
+ */
+void reverse(vector<size_t> &tour, size_t start, size_t end, vector<size_t>& position) {
+    size_t N = tour.size();
+    size_t numSwaps = (((start <= end ? end - start : (end + N) - start) + 1)/2);
+    int i = start;
+    int j = end;
+    for (size_t n = 0; n < numSwaps; ++n) {
+        swap(tour[i], tour[j]);
+        position[tour[i]] = i;
+        position[tour[j]] = j;
+        i = (i + 1) % N;
+        j = (j - 1 + N) % N;
+    }
+}
+
+/**
  * Peforms a 2-opt pass on the given tour.
  *
  * This functions uses the slow and stupid O(N^2) approach.
@@ -198,6 +205,7 @@ void reverse(vector<size_t> &tour, size_t start, size_t end) {
  * @param tour The tour to optimize.
  * @param d Distance matrix.
  */
+#if 0
 void twoOptSlow(vector<size_t>& tour, const Matrix<uint32_t>& d) {
     size_t N = tour.size();
     size_t u, v, w, z;
@@ -216,6 +224,56 @@ void twoOptSlow(vector<size_t>& tour, const Matrix<uint32_t>& d) {
         }
     }
 }
+#endif
+
+/**
+ * Returns the minimum distance d[i][j], i != j in the given distance matrix.
+ *
+ * @param d Distance matrix.
+ * @return Minimum distance in d.
+ */
+uint32_t minDistance(const Matrix<uint32_t>& d) {
+    size_t N = d.size();
+    uint32_t min = numeric_limits<size_t>::max();
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = 0; j < N; ++j) {
+            if (i != j)
+                min = std::min(min, d[i][j]);
+        }
+    }
+    return min;
+}
+
+/**
+ * Returns the maximum inter-city distance in the given tour.
+ *
+ * @param tour Input tour.
+ * @param d Distance matrix.
+ * @return Maximum inter-city distance in tour.
+ */
+uint32_t maxDistance(const vector<size_t>& tour, const Matrix<uint32_t>& d) {
+    size_t N = tour.size();
+    uint32_t max = 0;
+    for (size_t i = 0, j = 1; i < N; ++i, ++j) {
+        max = std::max(max, d[tour[i]][tour[j % N]]);
+    }
+    return max;
+}
+
+/**
+ * Returns the total length of a tour.
+ *
+ * @param tour The input tour.
+ * @param d Distance matrix.
+ */
+uint64_t length(const vector<size_t>& tour, const Matrix<uint32_t>& d) {
+    size_t N = tour.size();
+    uint64_t length = 0;
+    for (size_t i = 0, j = 1; i < N; ++i, ++j) {
+        length += d[tour[i]][tour[j % N]];
+    }
+    return length;
+}
 
 /**
  * Perform a 2-opt pass on the given tour.
@@ -227,79 +285,56 @@ void twoOptSlow(vector<size_t>& tour, const Matrix<uint32_t>& d) {
  * @param d Distance matrix.
  * @param neighbor Nearest neighbors matrix.
  */
-void twoOpt(vector<size_t>& tour, const Matrix<uint32_t>& d, const Matrix<uint32_t>& neighbor) {
+bool twoOpt(vector<size_t>& tour, const Matrix<uint32_t>& d, const Matrix<uint32_t>& neighbor, uint32_t min) {
     size_t N = d.size();
+    bool isTwoOpt = true;
 
-    // The shortest possible link in a tour (shortest distance in G).
-    uint32_t min = numeric_limits<size_t>::max();
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            if (i != j)
-                min = std::min(min, d[i][j]);
-        }
-    }
-
-    // Maximum distance in current tour.
-    uint32_t max = numeric_limits<size_t>::min();
-    for (size_t i = 0, j = 1; j < N; ++i, ++j) {
-        max = std::max(max, d[tour[i]][tour[j]]);
-    }
-    max = std::max(max, d[tour[N - 1]][tour[0]]);
-
-    // Tour position vector (position[i] = j means i is the j:th city in tour)
+    // Initialize city tour position vector.
     vector<size_t> position(N);
-    for (size_t n = 0; n < N; ++n) {
-        position[tour[n]] = n;
+    for (size_t i = 0; i < N; ++i) {
+        position[tour[i]] = i; // tour[i] is the i:th city in tour.
     }
 
-    for (size_t n1 = 0; n1 < N; ++n1) {
-        size_t m1 = (n1 - 1 + N) % N;
-        for (size_t j2 = 0; j2 < N - 1; ++j2) {
-            // n2 is the tour position of the j2:th neighbor of the n1:th city in the tour.
-            size_t n2 = position[neighbor[n1][j2]];
-            size_t m2 = (n2 - 1 + N) % N;
-            if (d[tour[n1]][tour[n2]] + min > d[tour[m1]][tour[n1]] + max) {
-                break; // Go to next n1.
-            }
-            if (m1 == m2 || n1 == n2) {
-                continue; // Don't consider connecting a city with itself.
-            }
-            if (d[tour[m2]][tour[m1]] + d[tour[n2]][tour[n1]] <
-                d[tour[m1]][tour[n1]] + d[tour[m2]][tour[n2]]) {
-                /* We have the following situation:
-                 *
-                 * --m1 m2--      <-m1-m2--
-                 *     X     ===>
-                 * <-n2 n1->      --n2-n1->
-                 *
-                 * That is, the pair m2->m1 and n2->n1 are shorter than the current
-                 * m1->n1 and m2->n2. So simply reverse the order of the sub-tour
-                 * n2...m1.
-                 */
-                reverse(tour, n2, m1, position);
+    size_t u, v, w, z;                   // We consider exchanging (u, v) and (w, z).
+    size_t u_i, v_i, w_i, z_i;           // City positions in tour.
+    uint32_t max = maxDistance(tour, d); // Longest link in current tour.
 
-                // Update max link.
-                max = std::max(max, std::max(d[tour[m2]][tour[m1]], d[tour[n2]][tour[n1]]));
+    for (u_i = 0, v_i = 1; u_i < N; ++u_i, ++v_i) {
+        u = tour[u_i];
+        v = tour[v_i % N];
+        for (size_t n = 0; n < N - 1; ++n) {
+            w_i = position[neighbor[u][n]];
+            z_i = w_i + 1;
+            w = tour[w_i]; // w is the n:th closest neighbor of u.
+            z = tour[z_i % N];
 
-                break; // Go to next n1.
+            if (v == w || z == u) {
+                continue;
+            }
+
+            // d[u][w] + min is a lower bound on new length.
+            // d[u][v] + max is an upper bound on old length.
+            if (d[u][w] + min > d[u][v] + max) {
+                break; // Go to next edge (u, v).
+            }
+
+            if (d[u][w] + d[v][z] < d[u][v] + d[w][z]) { // Or < ?
+                //   --u w--        --u-w->
+                //      X     ===>
+                //   <-z v->        <-z-v--
+                reverse(tour, v_i % N, w_i, position);
+                
+                // FIXME: Update max incrementally.
+                //max = std::max(max, std::max(d[u][w], d[v][z]));
+                max = maxDistance(tour, d);
+
+                isTwoOpt = false;
+                break;
             }
         }
     }
-}
 
-/**
- * Returns the total length of a tour.
- *
- * @param tour The input tour.
- * @param d Distance matrix.
- */
-uint64_t length(const vector<size_t>& tour, const Matrix<uint32_t>& d) {
-    uint64_t length = 0;
-    for (size_t i = 0; i < tour.size() - 1; ++i) {
-        length += d[tour[i]][tour[i + 1]];
-    }
-    length += d[tour[tour.size() - 1]][tour[0]];
-    return length;
+    return isTwoOpt;
 }
 
 int main(int argc, char *argv[]) {
@@ -312,14 +347,11 @@ int main(int argc, char *argv[]) {
 
     // Optimize using 2-opt.
     Matrix<uint32_t> neighbor = createNeighborsMatrix(d);
-    uint64_t oldLength = numeric_limits<uint64_t>::max();
-    uint64_t newLength = length(tour, d);
+    uint32_t min = minDistance(d);
+    bool isTwoOpt = false;
     do {
-        //twoOpt(tour, d, neighbor);
-        twoOptSlow(tour, d);
-        oldLength = newLength;
-        newLength = length(tour, d);
-    } while (newLength < oldLength);
+        isTwoOpt = twoOpt(tour, d, neighbor, min);
+    } while (!isTwoOpt);
 
     // Print tour.
     for (auto city : tour) {
