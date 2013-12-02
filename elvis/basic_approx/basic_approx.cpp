@@ -278,7 +278,7 @@ bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                 break; // Go to next edge (u, v).
             }
 
-            if (d[u][w] + d[v][z] < d[u][v] + d[w][z]) { // Or < ?
+            if (d[u][w] + d[v][z] < d[u][v] + d[w][z]) {
                 //   --u w--        --u-w->
                 //      X     ===>
                 //   <-z v->        <-z-v--
