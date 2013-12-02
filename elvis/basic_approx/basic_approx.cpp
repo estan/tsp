@@ -240,7 +240,7 @@ uint64_t length(const vector<uint32_t>& tour, const Matrix<uint32_t>& d) {
  * @param d Distance matrix.
  * @param neighbor Nearest neighbors matrix.
  * @param min Shortest possible inter-city distance.
- * @return true if the tour is 2-opt, otherwise false.
+ * @return true if the tour was improved, otherwise false.
  */
 bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, uint32_t min) {
