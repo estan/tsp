@@ -43,10 +43,10 @@ Matrix<uint32_t> createDistanceMatrix(istream& in) {
     }
 
     // Calculate distance matrix.
-    Matrix<uint32_t> d(N);
+    Matrix<uint32_t> d(N, N);
     for (size_t i = 0; i < N; ++i) {
-        for (size_t j = 0; j < N; ++j) {
-            d[i][j] = round(sqrt(pow(x[i] - x[j], 2) + pow(y[i] - y[j], 2)));
+        for (size_t j = i + 1; j < N; ++j) {
+            d[i][j] = d[j][i] = round(sqrt(pow(x[i]-x[j], 2) + pow(y[i]-y[j], 2)));
         }
     }
 
@@ -60,7 +60,7 @@ Matrix<uint32_t> createDistanceMatrix(istream& in) {
  * @return The minimum spanning tree.
  */
 Matrix<uint32_t> primMST(const Matrix<uint32_t>& d) {
-    size_t N = d.size();
+    size_t N = d.rows();
 
     vector<bool> inMST(N);
     vector<uint32_t> cost(N);
@@ -93,7 +93,7 @@ Matrix<uint32_t> primMST(const Matrix<uint32_t>& d) {
     }
 
     // Build MST matrix.
-    Matrix<uint32_t> MST(N);
+    Matrix<uint32_t> MST(N, N);
     for (size_t v = 1; v < N; ++v) {
         MST[parent[v]][v] = d[parent[v]][v];
     }
@@ -108,7 +108,7 @@ Matrix<uint32_t> primMST(const Matrix<uint32_t>& d) {
  * @return 2-approximation TSP tour.
  */
 vector<uint16_t> twoApprox(const Matrix<uint32_t>& MST) {
-    size_t N = MST.size();
+    size_t N = MST.rows();
 
     vector<uint16_t> tour;
     vector<bool> visited(N);
@@ -136,18 +136,21 @@ vector<uint16_t> twoApprox(const Matrix<uint32_t>& MST) {
  * Calculate nearest neighbors matrix from a distance matrix.
  *
  * @param d Distance matrix.
- * @return A matrix where row i contains the neighbors of city i
- *         in ascending order of proximity.
+ * @return d.rows() x (d.cols - 1) matrix where element i,j is
+ *         the j:th nearest neighbor of city i.
  */
 Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d) {
-    size_t N = d.size();
-    Matrix<uint16_t> neighbor(N);
+    size_t N = d.rows();
+    size_t M = d.cols() - 1;
+    Matrix<uint16_t> neighbor(N, M);
     for (uint16_t i = 0; i < N; ++i) {
-        for (uint16_t j = 0; j < N; ++j) {
-            neighbor[i][j] = j;
+        // Fill row with [0, 1, ..., i - 1, i + 1, i + 2, ..., M].
+        for (uint16_t j = 0, k = 0; j < M; ++j, ++k) {
+            neighbor[i][j] = (i == j) ? ++k : k;
         }
-        sort(neighbor[i], neighbor[i] + N, [&](uint16_t j1, uint16_t j2) {
-            return i != j1 && (i == j2 || d[i][j1] < d[i][j2]);
+        // Sort row elements by distance to i.
+        sort(neighbor[i], neighbor[i] + M, [&](uint16_t j, uint16_t k) {
+            return d[i][j] < d[i][k];
         });
     }
     return neighbor;
@@ -187,7 +190,7 @@ void reverse(vector<uint16_t> &tour, size_t start, size_t end,
  * @return Minimum distance in d.
  */
 uint32_t minDistance(const Matrix<uint32_t>& d) {
-    size_t N = d.size();
+    size_t N = d.rows();
     uint32_t min = numeric_limits<size_t>::max();
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
@@ -244,7 +247,7 @@ uint64_t length(const vector<uint32_t>& tour, const Matrix<uint32_t>& d) {
  */
 bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, uint32_t min) {
-    size_t N = d.size();
+    size_t N = d.rows();
     bool didImprove = false;
 
     // Initialize city tour position vector.
