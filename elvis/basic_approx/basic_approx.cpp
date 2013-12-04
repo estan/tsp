@@ -18,6 +18,9 @@
 
 using namespace std;
 
+// Largest neighborhood to explore during 2-opt.
+const size_t TWOOPT_MAX_NEIGHBORS = 100;
+
 // Output stream operator (convenient for printing tours).
 ostream& operator<<(ostream& os, const vector<size_t>& v) {
     for (auto e : v)
@@ -133,25 +136,33 @@ vector<uint16_t> twoApprox(const Matrix<uint32_t>& MST) {
 }
 
 /**
- * Calculate nearest neighbors matrix from a distance matrix.
+ * Calculate K-nearest neighbors matrix from a distance matrix.
  *
  * @param d Distance matrix.
  * @return d.rows() x (d.cols - 1) matrix where element i,j is
  *         the j:th nearest neighbor of city i.
  */
-Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d) {
+Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
     size_t N = d.rows();
     size_t M = d.cols() - 1;
-    Matrix<uint16_t> neighbor(N, M);
-    for (uint16_t i = 0; i < N; ++i) {
-        // Fill row with [0, 1, ..., i - 1, i + 1, i + 2, ..., M].
-        for (uint16_t j = 0, k = 0; j < M; ++j, ++k) {
-            neighbor[i][j] = (i == j) ? ++k : k;
+    K = min(M, K);
+    Matrix<uint16_t> neighbor(N, K);
+    std::vector<uint16_t> row(M); // For sorting.
+
+    for (size_t i = 0; i < N; ++i) {
+        // Fill row with 0, 1, ..., i - 1, i + 1, ..., M - 1.
+        uint16_t k = 0;
+        for (size_t j = 0; j < M; ++j, ++k) {
+            row[j] = (i == j) ? ++k : k;
         }
-        // Sort row elements by distance to i.
-        sort(neighbor[i], neighbor[i] + M, [&](uint16_t j, uint16_t k) {
-            return d[i][j] < d[i][k];
-        });
+        // Sort K nearest row elements by distance to i.
+        partial_sort(row.begin(), row.begin() + K, row.end(),
+            [&](uint16_t j, uint16_t k) {
+                return d[i][j] < d[i][k];
+            }
+        );
+        // Copy first K elements (now sorted) to neighbor matrix.
+        copy(row.begin(), row.begin() + K, neighbor[i]);
     }
     return neighbor;
 }
@@ -264,7 +275,7 @@ bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         // For each edge (u, v).
         u = tour[u_i];
         v = tour[v_i % N];
-        for (size_t n = 0; n < N - 1; ++n) {
+        for (size_t n = 0; n < neighbor.cols(); ++n) {
             // Visit nearby edges (w, z).
             w_i = position[neighbor[u][n]];
             z_i = w_i + 1;
@@ -303,13 +314,15 @@ int main(int argc, char *argv[]) {
     // Create distance matrix from standard input.
     Matrix<uint32_t> d = createDistanceMatrix(cin);
 
-    // Calculate MST and 2-approximation.
+    // Calculate 2-approximation tour from minimum spanning tree.
     Matrix<uint32_t> MST = primMST(d);
     vector<uint16_t> tour = twoApprox(MST);
 
-    // Optimize using 2-opt.
-    Matrix<uint16_t> neighbor = createNeighborsMatrix(d);
+    // Calculate nearest neighbors and smallest possible city distance.
+    Matrix<uint16_t> neighbor = createNeighborsMatrix(d, TWOOPT_MAX_NEIGHBORS);
     uint32_t min = minDistance(d);
+
+    // Optimize tour using 2-opt.
     bool didImprove;
     do {
         didImprove = twoOpt(tour, d, neighbor, min);
