@@ -4,6 +4,8 @@
 #include <stack>
 #include <limits>
 #include <algorithm>
+#include <chrono>
+#include <random>
 #include <cmath>
 #include <cstdint>
 #include <cassert>
@@ -17,6 +19,10 @@
 #endif
 
 using namespace std;
+
+// Random number generator.
+random_device rd;
+default_random_engine rng(rd());
 
 // Largest neighborhood to explore during 2-opt.
 const size_t TWOOPT_MAX_NEIGHBORS = 100;
@@ -264,7 +270,7 @@ uint32_t maxDistance(const vector<uint16_t>& tour, const Matrix<uint32_t>& d) {
  * @param d Distance matrix.
  * @return The total length of the tour.
  */
-uint64_t length(const vector<uint32_t>& tour, const Matrix<uint32_t>& d) {
+uint64_t length(const vector<uint16_t>& tour, const Matrix<uint32_t>& d) {
     size_t N = tour.size();
     uint64_t length = 0;
     for (size_t i = 0, j = 1; i < N; ++i, ++j) {
@@ -340,28 +346,54 @@ bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
 }
 
 int main(int argc, char *argv[]) {
-    // Create distance matrix from standard input.
+    // Deadline is 1950 ms into the future.
+    auto now = chrono::high_resolution_clock::now();
+    auto deadline = now + chrono::duration<int, milli>(1950);
+
+    // Create distance / nearest neighbors matrix.
     Matrix<uint32_t> d = createDistanceMatrix(cin);
-
-    // Calculate 2-approximation tour from minimum spanning tree.
-    //Matrix<uint32_t> MST = primMST(d);
-    //vector<uint16_t> tour = twoApprox(MST);
-    
-    // Calculate a greedy tour.
-    vector<uint16_t> tour = greedy(d, 0);
-
-    // Calculate nearest neighbors and smallest possible city distance.
     Matrix<uint16_t> neighbor = createNeighborsMatrix(d, TWOOPT_MAX_NEIGHBORS);
-    uint32_t min = minDistance(d);
 
-    // Optimize tour using 2-opt.
-    bool didImprove;
-    do {
-        didImprove = twoOpt(tour, d, neighbor, min);
-    } while (didImprove);
+    uint32_t minCityDistance = minDistance(d); // Smallest city distance.
 
-    // Print tour.
-    for (auto city : tour) {
+    // Create vector of random possible start cities.
+    vector<uint16_t> startCities(d.rows());
+    for (uint16_t i = 0; i < d.rows(); ++i) {
+        startCities[i] = i;
+    }
+    shuffle(startCities.begin(), startCities.end(), rng);
+
+    vector<vector<uint16_t> > tours;
+    size_t minTour;
+    uint64_t minLength = numeric_limits<uint64_t>::max();
+
+    // For each possible start city.
+    for (size_t i = 0; i < d.rows(); ++i) {
+        // Create greedy tour starting in startCities[i].
+        tours.emplace_back(d.rows());
+        tours[i] = greedy(d, startCities[i]);
+
+        // Optimize tour using 2-opt.
+        bool didImprove;
+        do {
+            didImprove = twoOpt(tours[i], d, neighbor, minCityDistance);
+        } while (didImprove);
+
+        // Check if we got a shorter tour.
+        uint64_t tourLength = length(tours[i], d);
+        if (tourLength < minLength) {
+            minTour = i;
+            minLength = tourLength;
+        }
+
+        // Check if deadline has passed.
+        if (chrono::high_resolution_clock::now() > deadline) {
+            break;
+        }
+    }
+
+    // Print the shortest tour.
+    for (auto city : tours[minTour]) {
         cout << city << endl;
     }
 
