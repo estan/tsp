@@ -303,11 +303,11 @@ bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         // For each edge (u, v).
         u = tour[u_i];
         v = tour[v_i % N];
-        for (size_t n = 0; n < neighbor.cols(); ++n) {
+        for (size_t k = 0; k < neighbor.cols(); ++k) {
             // Visit nearby edges (w, z).
-            w_i = position[neighbor[u][n]];
+            w_i = position[neighbor[u][k]];
             z_i = w_i + 1;
-            w = tour[w_i]; // w is the n:th closest neighbor of u.
+            w = tour[w_i]; // w is the k:th closest neighbor of u.
             z = tour[z_i % N];
 
             if (v == w || z == u) {
