@@ -136,19 +136,20 @@ vector<uint16_t> twoApprox(const Matrix<uint32_t>& MST) {
 }
 
 /**
- * Calculates a greedy TSP tour.
+ * Calculates a greedy TSP tour starting at city u.
  *
  * This is the naive algorithm given in the Kattis problem description.
  *
  * @param d Distance matrix.
+ * @param u Start city of tour.
  * @return Greedy TSP tour.
  */
-vector<uint16_t> greedy(const Matrix<uint32_t>& d) {
+vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
     size_t N = d.rows();
     vector<uint16_t> tour(N);
     vector<bool> used(N, false);
-    tour[0] = 0;
-    used[0] = true;
+    tour[0] = u;
+    used[u] = true;
     for (size_t i = 1; i < N; ++i) {
         // Find k, the closest city to the (i - 1):th city in tour.
         int32_t k = -1;
@@ -347,7 +348,7 @@ int main(int argc, char *argv[]) {
     //vector<uint16_t> tour = twoApprox(MST);
     
     // Calculate a greedy tour.
-    vector<uint16_t> tour = greedy(d);
+    vector<uint16_t> tour = greedy(d, 0);
 
     // Calculate nearest neighbors and smallest possible city distance.
     Matrix<uint16_t> neighbor = createNeighborsMatrix(d, TWOOPT_MAX_NEIGHBORS);
