@@ -147,6 +147,7 @@ vector<uint16_t> greedy(const Matrix<uint32_t>& d) {
     size_t N = d.rows();
     vector<uint16_t> tour(N);
     vector<bool> used(N, false);
+    tour[0] = 0;
     used[0] = true;
     for (size_t i = 1; i < N; ++i) {
         // Find k, the closest city to the (i - 1):th city in tour.
