@@ -160,14 +160,16 @@ vector<uint16_t> twoApprox(const Matrix<uint32_t>& MST) {
  *
  * @param d Distance matrix.
  * @param u Start city of tour.
+ * @param length Tour length (output).
  * @return Greedy TSP tour.
  */
-inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
+inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u, uint64_t& length) {
     size_t N = d.rows();
     vector<uint16_t> tour(N);
     vector<bool> used(N, false);
     tour[0] = u;
     used[u] = true;
+    length = 0;
     for (size_t i = 1; i < N; ++i) {
         // Find k, the closest city to the (i - 1):th city in tour.
         int32_t k = -1;
@@ -178,7 +180,9 @@ inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
         }
         tour[i] = k;
         used[k] = true;
+        length += d[tour[i - 1]][k];
     }
+    length += d[tour[N - 1]][tour[0]];
     return tour;
 }
 
@@ -339,20 +343,20 @@ inline void ordered(
  * @param position Position of each city in the input tour. Will be updated.
  * @param max Longest inter-city distance in input tour. Will be updated.
  * @param min Shortest possible inter-city distance.
+ * @param length Length of the input tour. Will be updated.
  */
 inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, vector<uint16_t> &position,
-        uint32_t& max, uint32_t min) {
-    size_t N = d.rows(); // Number of cities.
+        uint32_t& max, uint32_t min, uint64_t& length) {
+    size_t N = d.rows();         // Number of cities.
+    uint64_t oldLength = length; // Length of old tour.
 
     // Candidate edges uv, wz and their positions in tour.
     uint16_t u, v, w, z;
     size_t u_i, v_i, w_i, z_i;
 
-    bool locallyOptimal = false;
-
-    while (!locallyOptimal) {
-        locallyOptimal = true;
+    do {
+        oldLength = length;
 
         // For each edge uv.
         for (u_i = 0, v_i = 1; u_i < N; ++u_i, ++v_i) {
@@ -377,18 +381,19 @@ inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                     break; // Go to next edge uv.
                 }
 
-                if (d[u][w] + d[v][z] < d[u][v] + d[w][z]) {
+                int32_t delta = (d[u][w] + d[v][z]) - (d[u][v] + d[w][z]);
+                if (delta < 0) {
                     //   --u w--        --u-w->
                     //      X     ===>
                     //   <-z v->        <-z-v--
                     reverse(tour, v_i % N, w_i, position);
-                    max = std::max(max, std::max(d[u][w], d[v][z]));
-                    locallyOptimal = false;
+                    max = maximum(max, d[u][w], d[v][z]);
+                    length += delta;
                     break;
                 }
             }
         }
-    }
+    } while (length < oldLength);
 }
 
 /**
@@ -403,11 +408,13 @@ inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
  * @param position Position of each city in the input tour. Will be updated.
  * @param max Longest inter-city distance in input tour. Will be updated.
  * @param min Shortest possible inter-city distance.
+ * @param length Length of the input tour. Will be updated.
  */
 inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, vector<uint16_t>& position,
-        uint32_t& max, uint32_t min) {
-    const size_t N = d.rows(); // Number of cities.
+        uint32_t& max, uint32_t min, uint64_t& length) {
+    const size_t N = d.rows();   // Number of cities.
+    uint64_t oldLength = length; // Length of old tour.
 
     // Candidate edges PQ, RS, TU and their positions in tour.
     uint16_t P, Q, R, S, T, U;
@@ -417,10 +424,8 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
     uint16_t A, B, C, D, E, F;
     size_t A_i, B_i, C_i, D_i, E_i, F_i;
 
-    bool locallyOptimal = false; // Is the tour locally optimal yet?
-
-    while (!locallyOptimal) {
-        locallyOptimal = true;
+    do {
+        oldLength = length;
 
         // For each edge PQ.
         for (size_t i = 0; i < N; ++i) {
@@ -466,33 +471,35 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                     ordered(A, A_i, B, B_i, C, C_i, D, D_i, E, E_i, F, F_i,
                             P, P_i, Q, Q_i, R, R_i, S, S_i, T, T_i, U, U_i);
 
-                    bool changed = true;
+                    int32_t delta = 0;
 
                     // 2-edge exchanges.
                     if (d[A][C] + d[B][D] < d[A][B] + d[C][D]) {
                         reverse(tour, B_i, C_i, position); // Add AC, BD, keeping EF.
                         max = maximum(max, d[A][C], d[B][D]);
+                        delta = (d[A][C] + d[B][D]) - (d[A][B] + d[C][D]);
                     } else if (d[C][E] + d[D][F] < d[C][D] + d[E][F]) {
                         reverse(tour, D_i, E_i, position); // Add CE, DF, keeping AB.
                         max = maximum(max, d[C][E], d[D][F]);
+                        delta = (d[C][E] + d[D][F]) - (d[C][D] + d[E][F]);
                     } else if (d[E][A] + d[F][B] < d[A][B] + d[E][F]) {
                         reverse(tour, F_i, A_i, position); // Add EA, FB, keeping CD.
                         max = maximum(max, d[E][A], d[F][B]);
+                        delta = (d[E][A] + d[F][B]) - (d[A][B] + d[E][F]);
                     } else {
                         // 3-edge exchanges.
                         uint32_t d_AB_CD_EF = d[A][B] + d[C][D] + d[E][F];
-                        changed = false;
                     }
 
-                    if (changed) {
-                        locallyOptimal = false;
+                    length += delta; // Update tour length.
+
+                    if (delta != 0)
                         goto next_AB; // Go to next edge AB.
-                    }
                 }
             }
             next_AB: continue;
         }
-    }
+    } while (length < oldLength);
 }
 
 /**
@@ -532,9 +539,11 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
     // The main loop of the algorithm.
     int numIters = 0;
     for (size_t i = 0; i < N; ++i) {
+        uint64_t tourLength; // Length of current tour.
+
         // Create greedy tour starting in a random city.
         tours.emplace_back(N);
-        tours[i] = greedy(d, randomCity[i]);
+        tours[i] = greedy(d, randomCity[i], tourLength);
 
         // Maximum inter-city distance in the greedy tour.
         uint32_t max = maxDistance(tours[i], d);
@@ -545,11 +554,10 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
         }
 
         // Optimize tour using 3-opt.
-        threeOpt(tours[i], d, neighbor, position, max, min);
-        //twoOpt(tours[i], d, neighbor, position, max, min);
+        threeOpt(tours[i], d, neighbor, position, max, min, tourLength);
+        //twoOpt(tours[i], d, neighbor, position, max, min, tourLength);
 
         // Check if we got a shorter tour.
-        uint64_t tourLength = length(tours[i], d);
         if (tourLength < minLength) {
             minTour = i;
             minLength = tourLength;
