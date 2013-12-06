@@ -24,8 +24,8 @@ using namespace std;
 random_device rd;
 default_random_engine rng(rd());
 
-// Largest neighborhood to explore during 2-opt.
-const size_t TWOOPT_MAX_NEIGHBORS = 100;
+// Largest neighborhood to explore during 2-opt/3-opt optimization.
+const size_t OPTIMIZATION_MAX_NEIGHBORS = 100;
 
 // Output stream operator (convenient for printing tours).
 ostream& operator<<(ostream& os, const vector<uint16_t>& v) {
@@ -511,7 +511,7 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
 
     // Create distance / nearest neighbors matrix.
     Matrix<uint32_t> d = createDistanceMatrix(in);
-    Matrix<uint16_t> neighbor = createNeighborsMatrix(d, TWOOPT_MAX_NEIGHBORS);
+    Matrix<uint16_t> neighbor = createNeighborsMatrix(d, OPTIMIZATION_MAX_NEIGHBORS);
 
     const size_t N = d.rows();           // Number of cities.
     const uint32_t min = minDistance(d); // Shortest inter-city distance.
