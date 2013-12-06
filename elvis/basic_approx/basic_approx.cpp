@@ -292,72 +292,6 @@ uint64_t length(const vector<uint16_t>& tour, const Matrix<uint32_t>& d) {
 }
 
 /**
- * Perform a 2-opt pass on the given tour.
- *
- * This function uses the fast approach described on page 12-13 of "Large-Step
- * Markov Chains for the Traveling Salesman Problem" (Martin/Otto/Felten, 1991)
- *
- * @param tour The tour to optimize.
- * @param d Distance matrix.
- * @param neighbor Nearest neighbors matrix.
- * @param min Shortest possible inter-city distance.
- * @return true if the tour was improved, otherwise false.
- */
-bool twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
-        const Matrix<uint16_t>& neighbor, uint32_t min) {
-    size_t N = d.rows();
-    bool didImprove = false;
-
-    // Initialize city tour position vector.
-    vector<uint16_t> position(N);
-    for (uint16_t i = 0; i < N; ++i) {
-        position[tour[i]] = i; // tour[i] is the i:th city in tour.
-    }
-
-    uint16_t u, v, w, z;
-    size_t u_i, v_i, w_i, z_i;
-    uint32_t max = maxDistance(tour, d); // Longest link in current tour.
-
-    for (u_i = 0, v_i = 1; u_i < N; ++u_i, ++v_i) {
-        // For each edge (u, v).
-        u = tour[u_i];
-        v = tour[v_i % N];
-        for (size_t k = 0; k < neighbor.cols(); ++k) {
-            // Visit nearby edges (w, z).
-            w_i = position[neighbor[u][k]];
-            z_i = w_i + 1;
-            w = tour[w_i]; // w is the k:th closest neighbor of u.
-            z = tour[z_i % N];
-
-            if (v == w || z == u) {
-                continue; // Skip adjacent edges.
-            }
-
-            // d[u][w] + min is a lower bound on new length.
-            // d[u][v] + max is an upper bound on old length.
-            if (d[u][w] + min > d[u][v] + max) {
-                break; // Go to next edge (u, v).
-            }
-
-            if (d[u][w] + d[v][z] < d[u][v] + d[w][z]) {
-                //   --u w--        --u-w->
-                //      X     ===>
-                //   <-z v->        <-z-v--
-                reverse(tour, v_i % N, w_i, position);
-                
-                // FIXME: Is this enough to update max?
-                max = std::max(max, std::max(d[u][w], d[v][z]));
-
-                didImprove = true;
-                break;
-            }
-        }
-    }
-
-    return didImprove;
-}
-
-/**
  * Order three edges by tour position.
  *
  * This function sets edges AB, CD, EF to GH, IJ, KL ordered by their tour
@@ -390,6 +324,70 @@ inline void ordered(
         B = H; B_i = H_i;
         C = I; C_i = I_i;
         D = J; D_i = J_i;
+    }
+}
+
+/**
+ * Optimizes the given tour using 2-opt.
+ *
+ * This function uses the fast approach described on page 12-13 of "Large-Step
+ * Markov Chains for the Traveling Salesman Problem" (Martin/Otto/Felten, 1991)
+ *
+ * @param tour The tour to optimize.
+ * @param d Distance matrix.
+ * @param neighbor Nearest neighbors matrix.
+ * @param position Position of each city in the input tour. Will be updated.
+ * @param max Longest inter-city distance in input tour. Will be updated.
+ * @param min Shortest possible inter-city distance.
+ */
+void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
+        const Matrix<uint16_t>& neighbor, vector<uint16_t> &position,
+        uint32_t& max, uint32_t min) {
+    size_t N = d.rows(); // Number of cities.
+
+    // Candidate edges uv, wz and their positions in tour.
+    uint16_t u, v, w, z;
+    size_t u_i, v_i, w_i, z_i;
+
+    bool locallyOptimal = false;
+
+    while (!locallyOptimal) {
+        locallyOptimal = true;
+
+        // For each edge uv.
+        for (u_i = 0, v_i = 1; u_i < N; ++u_i, ++v_i) {
+            u = tour[u_i];
+            v = tour[v_i % N];
+
+            // For each edge wz (w k:th closest neighbor of u).
+            for (size_t k = 0; k < neighbor.cols(); ++k) {
+                // Visit nearby edges (w, z).
+                w_i = position[neighbor[u][k]];
+                z_i = w_i + 1;
+                w = tour[w_i];
+                z = tour[z_i % N];
+
+                if (v == w || z == u) {
+                    continue; // Skip adjacent edges.
+                }
+
+                // d[u][w] + min is a lower bound on new length.
+                // d[u][v] + max is an upper bound on old length.
+                if (d[u][w] + min > d[u][v] + max) {
+                    break; // Go to next edge uv.
+                }
+
+                if (d[u][w] + d[v][z] < d[u][v] + d[w][z]) {
+                    //   --u w--        --u-w->
+                    //      X     ===>
+                    //   <-z v->        <-z-v--
+                    reverse(tour, v_i % N, w_i, position);
+                    max = std::max(max, std::max(d[u][w], d[v][z]));
+                    locallyOptimal = false;
+                    break;
+                }
+            }
+        }
     }
 }
 
@@ -548,6 +546,7 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
 
         // Optimize tour using 3-opt.
         threeOpt(tours[i], d, neighbor, position, max, min);
+        //twoOpt(tours[i], d, neighbor, position, max, min);
 
         // Check if we got a shorter tour.
         uint64_t tourLength = length(tours[i], d);
