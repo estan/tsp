@@ -37,13 +37,13 @@ ostream& operator<<(ostream& os, const vector<uint16_t>& v) {
 
 // 3-argument maximum function.
 template<typename T>
-T maximum(const T& a, const T& b, const T& c) {
+inline T maximum(const T& a, const T& b, const T& c) {
     return std::max(a, std::max(b, c));
 }
 
 // 4-argument maximum function.
 template<typename T>
-T maximum(const T& a, const T& b, const T& c, const T& d) {
+inline T maximum(const T& a, const T& b, const T& c, const T& d) {
     return std::max(a, std::max(b, std::max(c, d)));
 }
 
@@ -162,7 +162,7 @@ vector<uint16_t> twoApprox(const Matrix<uint32_t>& MST) {
  * @param u Start city of tour.
  * @return Greedy TSP tour.
  */
-vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
+inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
     size_t N = d.rows();
     vector<uint16_t> tour(N);
     vector<bool> used(N, false);
@@ -226,7 +226,7 @@ Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
  * @param position Vector containing positions of cities in the tour, will
  *                 be updated to reflect the reversal.
  */
-void reverse(vector<uint16_t> &tour, size_t start, size_t end,
+inline void reverse(vector<uint16_t> &tour, size_t start, size_t end,
         vector<uint16_t>& position) {
     size_t N = tour.size();
     size_t numSwaps = (((start <= end ? end - start : (end + N) - start) + 1)/2);
@@ -340,7 +340,7 @@ inline void ordered(
  * @param max Longest inter-city distance in input tour. Will be updated.
  * @param min Shortest possible inter-city distance.
  */
-void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
+inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, vector<uint16_t> &position,
         uint32_t& max, uint32_t min) {
     size_t N = d.rows(); // Number of cities.
@@ -404,10 +404,10 @@ void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
  * @param max Longest inter-city distance in input tour. Will be updated.
  * @param min Shortest possible inter-city distance.
  */
-void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
+inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, vector<uint16_t>& position,
         uint32_t& max, uint32_t min) {
-    const size_t N = d.rows();
+    const size_t N = d.rows(); // Number of cities.
 
     // Candidate edges PQ, RS, TU and their positions in tour.
     uint16_t P, Q, R, S, T, U;
