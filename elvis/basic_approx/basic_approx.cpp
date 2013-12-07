@@ -412,7 +412,8 @@ inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
  */
 inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, vector<uint16_t>& position,
-        uint32_t& max, uint32_t min, uint64_t& length) {
+        uint32_t& max, uint32_t min, uint64_t& length,
+        const chrono::time_point<chrono::high_resolution_clock>& deadline) {
     const size_t N = d.rows();   // Number of cities.
     uint64_t oldLength = length; // Length of old tour.
 
@@ -433,6 +434,10 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
             Q_i = (P_i + 1) % N;
             P = tour[P_i];
             Q = tour[Q_i];
+
+            if (chrono::high_resolution_clock::now() > deadline) {
+                return;
+            }
 
             // For each edge RS (S j:th nearest neighbor of P).
             for (size_t j = 0; j < neighbor.cols(); ++j) {
@@ -475,20 +480,49 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
 
                     // 2-edge exchanges.
                     if (d[A][C] + d[B][D] < d[A][B] + d[C][D]) {
-                        reverse(tour, B_i, C_i, position); // Add AC, BD, keeping EF.
+                        // Change AB, BC to AC, BD, but keep EF.
+                        reverse(tour, B_i, C_i, position);
                         max = maximum(max, d[A][C], d[B][D]);
                         delta = (d[A][C] + d[B][D]) - (d[A][B] + d[C][D]);
                     } else if (d[C][E] + d[D][F] < d[C][D] + d[E][F]) {
-                        reverse(tour, D_i, E_i, position); // Add CE, DF, keeping AB.
+                        // Change CD, EF to CE, DF, but keep AB.
+                        reverse(tour, D_i, E_i, position);
                         max = maximum(max, d[C][E], d[D][F]);
                         delta = (d[C][E] + d[D][F]) - (d[C][D] + d[E][F]);
                     } else if (d[E][A] + d[F][B] < d[A][B] + d[E][F]) {
-                        reverse(tour, F_i, A_i, position); // Add EA, FB, keeping CD.
+                        // Change AB, EF to EA, FB, but keep CD.
+                        reverse(tour, F_i, A_i, position);
                         max = maximum(max, d[E][A], d[F][B]);
                         delta = (d[E][A] + d[F][B]) - (d[A][B] + d[E][F]);
                     } else {
                         // 3-edge exchanges.
                         uint32_t d_AB_CD_EF = d[A][B] + d[C][D] + d[E][F];
+                        if (d[D][A] + d[F][B] + d[C][E] < d_AB_CD_EF) {
+                            // Change AB, CD, EF to DA, FB, CE.
+                            reverse(tour, F_i, A_i, position);
+                            reverse(tour, D_i, E_i, position);
+                            max = maximum(max, d[D][A], d[F][B], d[C][E]);
+                            delta = (d[D][A] + d[F][B] + d[C][E]) - d_AB_CD_EF;
+                        } else if (d[B][D] + d[E][A] + d[F][C] < d_AB_CD_EF) {
+                            // Change AB, CD, EF to BD, EA, FC.
+                            reverse(tour, F_i, A_i, position);
+                            reverse(tour, B_i, C_i, position);
+                            max = maximum(max, d[B][D], d[E][A], d[F][C]);
+                            delta = (d[B][D] + d[E][A] + d[F][C]) - d_AB_CD_EF;
+                        } else if (d[A][C] + d[B][E] + d[D][F] < d_AB_CD_EF) {
+                            // Change AB, CD, EF to AC, BE, DF.
+                            reverse(tour, B_i, C_i, position);
+                            reverse(tour, D_i, E_i, position);
+                            max = maximum(max, d[A][C], d[B][E], d[D][F]);
+                            delta = (d[A][C] + d[B][E] + d[D][F]) - d_AB_CD_EF;
+                        } else if (d[B][E] + d[D][A] + d[F][C] < d_AB_CD_EF) {
+                            // Change AB, CD, EF to BE, DA, FC.
+                            reverse(tour, A_i, F_i, position);
+                            reverse(tour, B_i, C_i, position);
+                            reverse(tour, D_i, E_i, position);
+                            max = maximum(max, d[B][E], d[D][A], d[F][C]);
+                            delta = (d[B][E] + d[D][A] + d[F][C]) - d_AB_CD_EF;
+                        }
                     }
 
                     length += delta; // Update tour length.
@@ -505,16 +539,21 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
 /**
  * Approximates optimal TSP tour through graph read from the given input stream.
  *
- * The function will try to return within the given number of milliseconds.
+ * The function will try to return before the given deadline, but expect some
+ * variations.
  *
  * @param d Distance matrix.
  * @param deadline Time available in milliseconds.
  * @return An approximation of the optimal TSP tour.
  */
-std::vector<uint16_t> approximate(istream &in, int availableTime) {
-    // Deadline is availableTime ms into the future.
-    auto now = chrono::high_resolution_clock::now();
-    auto deadline = now + chrono::duration<int, milli>(availableTime);
+std::vector<uint16_t> approximate(
+        istream &in,
+        const chrono::time_point<chrono::high_resolution_clock>& deadline) {
+
+    // 3-opt takes some time to finish.
+    // Deadline before which last optimization step must finish.
+    //auto optimizeDeadline = deadline - chrono::duration<int, milli>(500);
+    auto realDeadline = deadline - chrono::duration<int, milli>(200);
 
     // Create distance / nearest neighbors matrix.
     Matrix<uint32_t> d = createDistanceMatrix(in);
@@ -536,6 +575,11 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
     vector<vector<uint16_t> > tours; // Found tours.
     vector<uint16_t> position(N);    // Maps cities to their position in tour.
 
+    chrono::duration<int, milli> totHeurDuration(0);
+    chrono::duration<int, milli> avgHeurDuration(0);
+    chrono::duration<int, milli> totOptDuration(0);
+    chrono::duration<int, milli> avgOptDuration(0);
+    
     // The main loop of the algorithm.
     int numIters = 0;
     for (size_t i = 0; i < N; ++i) {
@@ -543,9 +587,14 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
 
         // Create greedy tour starting in a random city.
         tours.emplace_back(N);
-        tours[i] = greedy(d, randomCity[i], tourLength);
 
-        // Maximum inter-city distance in the greedy tour.
+        auto before = chrono::high_resolution_clock::now();
+        tours[i] = greedy(d, randomCity[i], tourLength);
+        auto duration = chrono::high_resolution_clock::now() - before;
+        totHeurDuration += chrono::duration_cast<std::chrono::milliseconds>(duration);
+        avgHeurDuration = totHeurDuration / (i + 1);
+
+        // Maximum inter-city distance in tour.
         uint32_t max = maxDistance(tours[i], d);
 
         // Initialize city tour position vector.
@@ -553,9 +602,13 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
             position[tours[i][j]] = j; // tours[i][j] is the j:th city in tours[i].
         }
 
-        // Optimize tour using 3-opt.
-        threeOpt(tours[i], d, neighbor, position, max, min, tourLength);
-        //twoOpt(tours[i], d, neighbor, position, max, min, tourLength);
+        // Optimize tour using 2- or 3-opt.
+        before = chrono::high_resolution_clock::now();
+        twoOpt(tours[i], d, neighbor, position, max, min, tourLength);
+        //threeOpt(tours[i], d, neighbor, position, max, min, tourLength, realDeadline);
+        duration = chrono::high_resolution_clock::now() - before;
+        totOptDuration += chrono::duration_cast<std::chrono::milliseconds>(duration);
+        avgOptDuration = totOptDuration / (i + 1);
 
         // Check if we got a shorter tour.
         if (tourLength < minLength) {
@@ -564,19 +617,28 @@ std::vector<uint16_t> approximate(istream &in, int availableTime) {
         }
 
         numIters++;
-        
         // Check if deadline has passed.
-        if (chrono::high_resolution_clock::now() > deadline) {
+        if ((chrono::high_resolution_clock::now() + 2 * avgOptDuration) > deadline) {
             break;
         }
     }
 
+    /*
+    cerr << "numIters: " << numIters << endl;
+    cerr << "totHeurDuration: " << chrono::duration_cast<std::chrono::milliseconds>(totHeurDuration).count() << " ms" << endl;
+    cerr << "avgHeurDuration: " << chrono::duration_cast<std::chrono::milliseconds>(avgHeurDuration).count() << " ms" << endl;
+    cerr << "totOptDuration: " << chrono::duration_cast<std::chrono::milliseconds>(totOptDuration).count() << " ms" << endl;
+    cerr << "avgOptDuration: " << chrono::duration_cast<std::chrono::milliseconds>(avgOptDuration).count() << " ms" << endl;*/
     return tours[minTour]; // Return shortest found tour.
 }
 
 int main(int argc, char *argv[]) {
+    // Establish a deadline 1900 ms into the future.
+    auto deadline = chrono::high_resolution_clock::now();
+    deadline += chrono::duration<int, milli>(1900);
+
     // Approximate a TSP tour.
-    vector<uint16_t> tour = approximate(cin, 1950);
+    vector<uint16_t> tour = approximate(cin, deadline);
 
     // Print the tour.
     for (auto city : tour) {
