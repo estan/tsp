@@ -516,7 +516,7 @@ std::vector<uint16_t> approximate(istream &in,
      *   1) "Kick" the tour with a random 4-exchange.
      *   2) Optimize the tour with 2-opt + 3-opt.
      *
-     * until only min(50, 2 * the average iteration time) milliseconds remains
+     * until only max(50, 2 * average iteration time) milliseconds is remains
      * before deadline, and then pick the shortest tour we found.
      */
     for (i = 0; (now() + std::max(fifty_ms, 2 * avgT)) < deadline; ++i) {
