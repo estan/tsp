@@ -13,7 +13,7 @@
 #include "matrix.h"
 
 #ifdef DEBUG
-    #define LOG(x) std::cerr << x
+    #define LOG(x) std::cerr << x << std::endl
 #else
     #define LOG(x)
 #endif
@@ -554,9 +554,9 @@ std::vector<uint16_t> approximate(istream &in,
         avgT = totT / (i + 1);
     }
 
-    cerr << "i: " << i << endl;
-    cerr << "totT: " << milliseconds(totT) << " ms" << endl;
-    cerr << "avgT: " << milliseconds(avgT) << " ms" << endl;
+    LOG("i: " << i);
+    LOG("totT: " << milliseconds(totT) << " ms");
+    LOG("avgT: " << milliseconds(avgT) << " ms");
 
     return shortestTour;
 }
