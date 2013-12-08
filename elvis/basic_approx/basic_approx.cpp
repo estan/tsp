@@ -27,9 +27,6 @@ default_random_engine rng(rd());
 // Size of nearest neighbors matrix.
 const static size_t MAX_K = 20;
 
-// Constant 50 ms duration used in main loop.
-const static chrono::duration<long, milli> fifty_ms(50);
-
 /*
  * Some small helper functions.
  */
@@ -310,6 +307,10 @@ inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
  * This function uses the fast approach described on page 12-15 of "Large-Step
  * Markov Chains for the Traveling Salesman Problem" (Martin/Otto/Felten, 1991)
  *
+ * The algorithm will only consider "real" 3-exchanges involving all three
+ * edges. So for best results, the tour should be preprocessed with the 2-opt
+ * algorithm first.
+ *
  * @param tour The tour to optimize.
  * @param d Distance matrix.
  * @param neighbor Nearest neighbors matrix.
@@ -500,7 +501,8 @@ std::vector<uint16_t> approximate(istream &in,
     chrono::duration<long, milli> totT(0); // Total time spent in main loop.
     chrono::duration<long, milli> avgT(0); // Average main loop iteration time.
 
-    // The 3-opt inside must try to return 50 ms before deadline.
+    // Deadline for 3-opt inside main loop is 50 ms before hard deadline.
+    chrono::duration<long, milli> fifty_ms(50);
     auto threeOptDeadline = deadline - fifty_ms;
 
     vector<uint16_t> shortestTour = tour;          // Best tour found.
@@ -509,12 +511,16 @@ std::vector<uint16_t> approximate(istream &in,
     /*
      * Main loop.
      *
-     * We repeatedly "kick" the tour with a random 4-exchange and run 2-opt + 3-opt
-     * on it until only 50 ms, or 2 * the average iteration time (which ever is
-     * longest) remains before deadline, and pick the shortest tour we found.
+     * We repeatedly
+     *
+     *   1) "Kick" the tour with a random 4-exchange.
+     *   2) Optimize the tour with 2-opt + 3-opt.
+     *
+     * until only min(50, 2 * the average iteration time) milliseconds remains
+     * before deadline, and then pick the shortest tour we found.
      */
     for (i = 0; (now() + std::max(fifty_ms, 2 * avgT)) < deadline; ++i) {
-        auto start = chrono::high_resolution_clock::now();
+        auto start = now();
 
         if (N >= 8) {
             // Perform random 4-opt "double bridge" move.
@@ -531,7 +537,7 @@ std::vector<uint16_t> approximate(istream &in,
             position[tour[j]] = j;
         }
 
-        // Optimize tour with 2-opt.
+        // Optimize tour with 2-opt + 3-opt.
         twoOpt(tour, d, neighbor, position, max, min);
         threeOpt(tour, d, neighbor, position, max, min, threeOptDeadline);
 
@@ -548,11 +554,9 @@ std::vector<uint16_t> approximate(istream &in,
         avgT = totT / (i + 1);
     }
 
-    /*
     cerr << "i: " << i << endl;
     cerr << "totT: " << milliseconds(totT) << " ms" << endl;
     cerr << "avgT: " << milliseconds(avgT) << " ms" << endl;
-    */
 
     return shortestTour;
 }
