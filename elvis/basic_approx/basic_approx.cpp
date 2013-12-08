@@ -466,7 +466,7 @@ inline vector<uint16_t> doubleBridge(
  * The function will try to return before the given deadline, but expect some
  * variations.
  *
- * @param d Distance matrix.
+ * @param in Input stream.
  * @param deadline Time available in milliseconds.
  * @return An approximation of the optimal TSP tour.
  */
