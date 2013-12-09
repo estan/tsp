@@ -378,7 +378,7 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                         continue; // Go to next edge TU.
 
                     if (d[P][S] + d[Q][U] + min > d[P][Q] + d[R][S] + max)
-                        break;
+                        break; // Go to next edge RS.
 
                     // Let AB, CD, EF be the edges PQ, RS, TU in tour order.
                     ordered(A, A_i, B, B_i, C, C_i, D, D_i, E, E_i, F, F_i,
