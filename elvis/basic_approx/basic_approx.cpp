@@ -416,11 +416,11 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
 
                     if (changed) {
                         locallyOptimal = false;
-                        goto next_AB; // Go to next edge AB.
+                        goto next_PQ; // Go to next edge PQ.
                     }
                 }
             }
-            next_AB: continue;
+            next_PQ: continue;
         }
     }
 }
