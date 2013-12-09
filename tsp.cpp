@@ -37,7 +37,7 @@ static inline std::chrono::time_point<std::chrono::high_resolution_clock> now() 
 // Output stream operator for durations.
 template<typename T, typename E>
 inline ostream& operator<<(const ostream& out, const chrono::duration<T, E>& d) {
-    out << chrono::duration_cast<std::chrono::milliseconds>(d).count();
+    out << chrono::duration_cast<std::chrono::milliseconds>(d).count() << " ms";
     return out;
 }
 
@@ -555,8 +555,8 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
 
     LOG("Main Loop Statistics");
     LOG("  iterations: " << i);
-    LOG("  totalTime: " << totalTime << " ms");
-    LOG("  averateTime: " << averageTime << " ms");
+    LOG("  totalTime: " << totalTime);
+    LOG("  averateTime: " << averageTime);
 
     return shortestTour;
 }
