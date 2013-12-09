@@ -36,10 +36,11 @@ static inline std::chrono::time_point<std::chrono::high_resolution_clock> now() 
     return std::chrono::high_resolution_clock::now();
 }
 
-// Return a duration as number of milliseconds.
+// Output stream operator for durations.
 template<typename T, typename E>
-static inline T milliseconds(const chrono::duration<T, E>& d) {
-    return chrono::duration_cast<std::chrono::milliseconds>(d).count();
+inline ostream& operator<<(const ostream& out, const chrono::duration<T, E>& d) {
+    out << chrono::duration_cast<std::chrono::milliseconds>(d).count();
+    return out;
 }
 
 // 3-argument maximum function.
@@ -554,8 +555,8 @@ std::vector<uint16_t> approximate(istream &in,
     }
 
     LOG("i: " << i);
-    LOG("totT: " << milliseconds(totT) << " ms");
-    LOG("avgT: " << milliseconds(avgT) << " ms");
+    LOG("totT: " << totT << " ms");
+    LOG("avgT: " << avgT << " ms");
 
     return shortestTour;
 }
