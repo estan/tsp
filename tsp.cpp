@@ -556,7 +556,7 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
     LOG("Main Loop Statistics");
     LOG("  iterations: " << i);
     LOG("  totalTime: " << totalTime);
-    LOG("  averateTime: " << averageTime);
+    LOG("  averageTime: " << averageTime);
 
     return shortestTour;
 }
