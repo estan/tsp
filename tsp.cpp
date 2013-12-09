@@ -36,7 +36,7 @@ static inline std::chrono::time_point<std::chrono::high_resolution_clock> now() 
 
 // Output stream operator for durations.
 template<typename T, typename E>
-inline ostream& operator<<(const ostream& out, const chrono::duration<T, E>& d) {
+inline ostream& operator<<(ostream& out, const chrono::duration<T, E>& d) {
     out << chrono::duration_cast<std::chrono::milliseconds>(d).count() << " ms";
     return out;
 }
