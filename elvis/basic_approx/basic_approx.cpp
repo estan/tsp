@@ -448,10 +448,10 @@ inline vector<uint16_t> doubleBridge(
     const size_t N = tour.size();
     vector<uint16_t> newTour;
     newTour.reserve(N);
-    uniform_int_distribution<size_t> dist(1, N / 4);
-    size_t A = dist(rng);
-    size_t B = A + dist(rng);
-    size_t C = B + dist(rng);
+    uniform_int_distribution<size_t> randomOffset(1, N / 4);
+    size_t A = randomOffset(rng);
+    size_t B = A + randomOffset(rng);
+    size_t C = B + randomOffset(rng);
     copy(tour.begin(), tour.begin() + A, back_inserter(newTour));
     copy(tour.begin() + C, tour.end(), back_inserter(newTour));
     copy(tour.begin() + B, tour.begin() + C, back_inserter(newTour));
