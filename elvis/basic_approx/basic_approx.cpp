@@ -130,7 +130,7 @@ Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
         for (size_t j = 0; j < M; ++j, ++k) {
             row[j] = (i == j) ? ++k : k;
         }
-        // Sort K nearest row elements by distance to i.
+        // Sort K first elements in row by distance to i.
         partial_sort(row.begin(), row.begin() + K, row.end(),
             [&](uint16_t j, uint16_t k) {
                 return d[i][j] < d[i][k];
