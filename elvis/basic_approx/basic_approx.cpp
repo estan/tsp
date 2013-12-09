@@ -271,7 +271,6 @@ inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
 
             // For each edge wz (w k:th closest neighbor of u).
             for (size_t k = 0; k < neighbor.cols(); ++k) {
-                // Visit nearby edges (w, z).
                 w_i = position[neighbor[u][k]];
                 z_i = w_i + 1;
                 w = tour[w_i];
