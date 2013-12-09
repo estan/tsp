@@ -562,12 +562,8 @@ std::vector<uint16_t> approximate(istream &in,
 
 int main(int argc, char *argv[]) {
 
-    // Establish a deadline 1950 ms into the future.
-    auto deadline = chrono::high_resolution_clock::now();
-    deadline += chrono::duration<int, milli>(1950);
-
-    // Approximate a TSP tour.
-    vector<uint16_t> tour = approximate(cin, deadline);
+    // Approximate a TSP tour in ~1950 milliseconds.
+    vector<uint16_t> tour = approximate(cin, now() + chrono::milliseconds(1950));
 
     // Print the tour.
     for (auto city : tour) {
