@@ -497,12 +497,12 @@ std::vector<uint16_t> approximate(istream &in,
     twoOpt(tour, d, neighbor, position, max, min);
 
     // Some main loop statistics.
-    size_t i = 0;                          // Number of iterations of main loop.
-    chrono::duration<long, milli> totT(0); // Total time spent in main loop.
-    chrono::duration<long, milli> avgT(0); // Average main loop iteration time.
+    size_t i = 0;                 // Number of iterations of main loop.
+    chrono::milliseconds totT(0); // Total time spent in main loop.
+    chrono::milliseconds avgT(0); // Average main loop iteration time.
 
     // Deadline for 3-opt inside main loop is 50 ms before hard deadline.
-    chrono::duration<long, milli> fifty_ms(50);
+    chrono::milliseconds fifty_ms(50);
     auto threeOptDeadline = deadline - fifty_ms;
 
     vector<uint16_t> shortestTour = tour;          // Best tour found.
@@ -549,8 +549,7 @@ std::vector<uint16_t> approximate(istream &in,
         }
 
         // Collect statistics.
-        auto end = now();
-        totT += chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        totT += chrono::duration_cast<std::chrono::milliseconds>(now() - start);
         avgT = totT / (i + 1);
     }
 
