@@ -14,7 +14,7 @@
    id="svg3769"
    version="1.1"
    inkscape:version="0.48.4 r9939"
-   sodipodi:docname="3opt_reconnection.svg">
+   sodipodi:docname="3opt_cases.svg">
   <defs
      id="defs3771">
     <marker
@@ -53,9 +53,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="136.49836"
-     inkscape:cy="189.17467"
+     inkscape:zoom="0.98994949"
+     inkscape:cx="377.59912"
+     inkscape:cy="203.64265"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -68,7 +68,8 @@
      fit-margin-top="20"
      fit-margin-left="20"
      fit-margin-right="20"
-     fit-margin-bottom="20">
+     fit-margin-bottom="20"
+     inkscape:snap-page="true">
     <inkscape:grid
        type="xygrid"
        id="grid3777"
@@ -87,7 +88,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -96,6 +97,13 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-1.6639756,956.13658)">
+    <rect
+       style="fill:#ffffff;fill-opacity:1;stroke:none"
+       id="rect3143"
+       width="736.48895"
+       height="366.38229"
+       x="1.6639756"
+       y="-956.1366" />
     <g
        id="g3381"
        transform="translate(5.7142855,-794.28571)">
