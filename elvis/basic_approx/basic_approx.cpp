@@ -466,11 +466,11 @@ inline vector<uint16_t> doubleBridge(
  * variations.
  *
  * @param in Input stream.
- * @param deadline Time available in milliseconds.
+ * @param deadline Deadline before which function should try to return.
  * @return An approximation of the optimal TSP tour.
  */
-std::vector<uint16_t> approximate(istream &in,
-        const chrono::time_point<chrono::high_resolution_clock>& deadline) {
+template<typename T>
+vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline) {
     /*
      * Initialization.
      */
