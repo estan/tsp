@@ -382,7 +382,7 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                     ordered(A, A_i, B, B_i, C, C_i, D, D_i, E, E_i, F, F_i,
                             P, P_i, Q, Q_i, R, R_i, S, S_i, T, T_i, U, U_i);
 
-                    // Try exchanging AB, CD and EF.
+                    // Try exchanging AB, CD and EF for another edge triple.
                     bool changed = false;
                     uint32_t d_AB_CD_EF = d[A][B] + d[C][D] + d[E][F];
                     if (d[D][A] + d[F][B] + d[C][E] < d_AB_CD_EF) {
