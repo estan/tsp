@@ -316,12 +316,13 @@ inline void twoOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
  * @param position Position of each city in the input tour. Will be updated.
  * @param max Longest inter-city distance in input tour. Will be updated.
  * @param min Shortest possible inter-city distance.
+ * @param deadline Deadline at which function will try to return early.
  */
 inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
         const Matrix<uint16_t>& neighbor, vector<uint16_t>& position,
         uint32_t& max, uint32_t min,
         const chrono::time_point<chrono::high_resolution_clock>& deadline) {
-    const size_t N = d.rows();   // Number of cities.
+    const size_t N = d.rows(); // Number of cities.
 
     // Candidate edges PQ, RS, TU and their positions in tour.
     uint16_t P, Q, R, S, T, U;
