@@ -383,6 +383,7 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                             P, P_i, Q, Q_i, R, R_i, S, S_i, T, T_i, U, U_i);
 
                     // Try exchanging AB, CD and EF for another edge triple.
+                    // See 3opt_cases.png for an illustration.
                     bool changed = false;
                     uint32_t d_AB_CD_EF = d[A][B] + d[C][D] + d[E][F];
                     if (d[D][A] + d[F][B] + d[C][E] < d_AB_CD_EF) {
