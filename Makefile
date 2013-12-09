@@ -1,5 +1,5 @@
 all:
-	g++ -g -O2 -std=gnu++0x -Wall -pedantic -o basic_approx basic_approx.cpp
+	g++ -g -O2 -std=gnu++0x -Wall -pedantic -o tsp tsp.cpp
 
 clean:
-	@-rm -rf basic_approx > /dev/null 2>&1
+	@-rm -rf tsp > /dev/null 2>&1
