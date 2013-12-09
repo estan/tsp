@@ -358,10 +358,10 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
                     continue; // Go to next edge RS.
 
                 if (d[P][S] + 2 * min > d[P][Q] + 2 * max)
-                    break;
+                    break; // Go to next edge PQ.
 
                 if (d[P][S] + 2 * min > d[P][Q] + d[R][S] + max)
-                    continue;
+                    continue; // Go to next edge RS.
 
                 // For each edge TU (U k:th nearest neighbor of P).
                 for (size_t k = 0; k < neighbor.cols(); ++k) {
