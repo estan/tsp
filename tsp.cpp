@@ -440,12 +440,9 @@ inline void threeOpt(vector<uint16_t>& tour, const Matrix<uint32_t>& d,
  * Where edges AB, CD, EF and GH are chosen randomly.
  *
  * @param tour Input tour (must have at least 8 cities).
- * @param d Distance matrix.
  * @return The new tour.
  */
-inline vector<uint16_t> doubleBridge(
-        const vector<uint16_t>& tour,
-        const Matrix<uint32_t>& d) {
+inline vector<uint16_t> doubleBridge(const vector<uint16_t>& tour) {
     const size_t N = tour.size();
     vector<uint16_t> newTour;
     newTour.reserve(N);
@@ -528,7 +525,7 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
 
         if (N >= 8) {
             // Perform random 4-opt "double bridge" move.
-            tour = doubleBridge(tour, d);
+            tour = doubleBridge(tour);
         } else {
             // Tiny tour, so just shuffle it instead.
             shuffle(tour.begin(), tour.end(), rng);
