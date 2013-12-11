@@ -463,6 +463,10 @@ inline vector<uint16_t> doubleBridge(
 /**
  * Approximates optimal TSP tour through graph read from the given input stream.
  *
+ * The tour is approximated using iterated local search (ILS), with a greedy initial
+ * tour and 2-opt + 3-opt as local search methods, and a random 4-exchange ("double
+ * bridge") as perturbation.
+ *
  * The function will try to return before the given deadline, but expect some
  * variations.
  *
