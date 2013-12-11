@@ -211,20 +211,19 @@ Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
 }
 
 /**
- * Calculates a greedy TSP tour starting at city u.
+ * Calculates a greedy TSP tour.
  *
  * This is the naive algorithm given in the Kattis problem description.
  *
  * @param d Distance matrix.
- * @param u Start city of tour.
  * @return Greedy TSP tour.
  */
-inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
+inline vector<uint16_t> greedy(const Matrix<uint32_t>& d) {
     size_t N = d.rows();
     vector<uint16_t> tour(N);
     vector<bool> used(N, false);
-    tour[0] = u;
-    used[u] = true;
+    tour[0] = 0;
+    used[0] = true;
     for (size_t i = 1; i < N; ++i) {
         // Find k, the closest city to the (i - 1):th city in tour.
         int32_t k = -1;
@@ -486,7 +485,7 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
     const size_t N = d.rows();           // Number of cities.
 
     // Generate initial greedy tour.
-    vector<uint16_t> tour = greedy(d, 0);
+    vector<uint16_t> tour = greedy(d);
 
     // Create max / position for initial 2-opt.
     vector<uint16_t> position(N);
