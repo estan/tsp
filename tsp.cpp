@@ -54,120 +54,6 @@ static inline T maximum(const T& a, const T& b, const T& c, const T& d) {
 }
 
 /**
- * Create a distance matrix from an input stream and return it.
- *
- * @param in Input stream.
- * @return The read distance matrix.
- */
-Matrix<uint32_t> createDistanceMatrix(istream& in) {
-    // Read vertex coordinates.
-    size_t N;
-    in >> N;
-    vector<double> x(N);
-    vector<double> y(N);
-    for (size_t i = 0; i < N; ++i) {
-        in >> x[i] >> y[i];
-    }
-
-    // Calculate distance matrix.
-    Matrix<uint32_t> d(N, N);
-    for (size_t i = 0; i < N; ++i) {
-        for (size_t j = i + 1; j < N; ++j) {
-            d[i][j] = d[j][i] = round(sqrt(pow(x[i]-x[j], 2) + pow(y[i]-y[j], 2)));
-        }
-    }
-
-    return d;
-}
-
-/**
- * Calculates a greedy TSP tour starting at city u.
- *
- * This is the naive algorithm given in the Kattis problem description.
- *
- * @param d Distance matrix.
- * @param u Start city of tour.
- * @return Greedy TSP tour.
- */
-inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
-    size_t N = d.rows();
-    vector<uint16_t> tour(N);
-    vector<bool> used(N, false);
-    tour[0] = u;
-    used[u] = true;
-    for (size_t i = 1; i < N; ++i) {
-        // Find k, the closest city to the (i - 1):th city in tour.
-        int32_t k = -1;
-        for (uint16_t j = 0; j < N; ++j) {
-            if (!used[j] && (k == -1 || d[tour[i-1]][j] < d[tour[i-1]][k])) {
-                k = j;
-            }
-        }
-        tour[i] = k;
-        used[k] = true;
-    }
-    return tour;
-}
-
-/**
- * Calculate K-nearest neighbors matrix from a distance matrix.
- *
- * @param d Distance matrix.
- * @return d.rows() x K matrix where element i,j is the j:th nearest
- *         neighbor of city i.
- */
-Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
-    size_t N = d.rows();
-    size_t M = d.cols() - 1;
-    K = min(M, K);
-    Matrix<uint16_t> neighbor(N, K);
-    vector<uint16_t> row(M); // For sorting.
-
-    for (size_t i = 0; i < N; ++i) {
-        // Fill row with 0, 1, ..., i - 1, i + 1, ..., M - 1.
-        uint16_t k = 0;
-        for (size_t j = 0; j < M; ++j, ++k) {
-            row[j] = (i == j) ? ++k : k;
-        }
-        // Sort K first elements in row by distance to i.
-        partial_sort(row.begin(), row.begin() + K, row.end(),
-            [&](uint16_t j, uint16_t k) {
-                return d[i][j] < d[i][k];
-            }
-        );
-        // Copy first K elements (now sorted) to neighbor matrix.
-        copy(row.begin(), row.begin() + K, neighbor[i]);
-    }
-    return neighbor;
-}
-
-/**
- * Reverse a segment of a tour.
- *
- * This functions reverses the segment [start, end] of the given
- * tour and updates the position vector accordingly.
- *
- * @param tour The input tour.
- * @param start Start index of segment to reverse.
- * @param end End index of segment to reverse.
- * @param position Position of each city in the input tour. Will be updated.
- */
-inline void reverse(vector<uint16_t> &tour, size_t start, size_t end,
-        vector<uint16_t>& position) {
-    size_t N = tour.size();
-    size_t numSwaps = (((start <= end ? end - start : (end + N) - start) + 1)/2);
-    uint16_t i = start;
-    uint16_t j = end;
-    for (size_t n = 0; n < numSwaps; ++n) {
-        swap(tour[i], tour[j]);
-        position[tour[i]] = i;
-        position[tour[j]] = j;
-        i = (i + 1) % N;
-        j = ((j + N) - 1) % N;
-    }
-}
-
-/**
  * Returns the shortest distance d[i][j], i != j in the given distance matrix.
  *
  * @param d Distance matrix.
@@ -199,6 +85,32 @@ inline uint64_t length(const vector<uint16_t>& tour, const Matrix<uint32_t>& d) 
         length += d[tour[i]][tour[j % N]];
     }
     return length;
+}
+
+/**
+ * Reverse a segment of a tour.
+ *
+ * This functions reverses the segment [start, end] of the given
+ * tour and updates the position vector accordingly.
+ *
+ * @param tour The input tour.
+ * @param start Start index of segment to reverse.
+ * @param end End index of segment to reverse.
+ * @param position Position of each city in the input tour. Will be updated.
+ */
+inline void reverse(vector<uint16_t> &tour, size_t start, size_t end,
+        vector<uint16_t>& position) {
+    size_t N = tour.size();
+    size_t numSwaps = (((start <= end ? end - start : (end + N) - start) + 1)/2);
+    uint16_t i = start;
+    uint16_t j = end;
+    for (size_t n = 0; n < numSwaps; ++n) {
+        swap(tour[i], tour[j]);
+        position[tour[i]] = i;
+        position[tour[j]] = j;
+        i = (i + 1) % N;
+        j = ((j + N) - 1) % N;
+    }
 }
 
 /**
@@ -235,6 +147,94 @@ inline void ordered(
         C = I; C_i = I_i;
         D = J; D_i = J_i;
     }
+}
+
+/**
+ * Create a distance matrix from an input stream and return it.
+ *
+ * @param in Input stream.
+ * @return The read distance matrix.
+ */
+Matrix<uint32_t> createDistanceMatrix(istream& in) {
+    // Read vertex coordinates.
+    size_t N;
+    in >> N;
+    vector<double> x(N);
+    vector<double> y(N);
+    for (size_t i = 0; i < N; ++i) {
+        in >> x[i] >> y[i];
+    }
+
+    // Calculate distance matrix.
+    Matrix<uint32_t> d(N, N);
+    for (size_t i = 0; i < N; ++i) {
+        for (size_t j = i + 1; j < N; ++j) {
+            d[i][j] = d[j][i] = round(sqrt(pow(x[i]-x[j], 2) + pow(y[i]-y[j], 2)));
+        }
+    }
+
+    return d;
+}
+
+/**
+ * Calculate K-nearest neighbors matrix from a distance matrix.
+ *
+ * @param d Distance matrix.
+ * @return d.rows() x K matrix where element i,j is the j:th nearest
+ *         neighbor of city i.
+ */
+Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
+    size_t N = d.rows();
+    size_t M = d.cols() - 1;
+    K = min(M, K);
+    Matrix<uint16_t> neighbor(N, K);
+    vector<uint16_t> row(M); // For sorting.
+
+    for (size_t i = 0; i < N; ++i) {
+        // Fill row with 0, 1, ..., i - 1, i + 1, ..., M - 1.
+        uint16_t k = 0;
+        for (size_t j = 0; j < M; ++j, ++k) {
+            row[j] = (i == j) ? ++k : k;
+        }
+        // Sort K first elements in row by distance to i.
+        partial_sort(row.begin(), row.begin() + K, row.end(),
+            [&](uint16_t j, uint16_t k) {
+                return d[i][j] < d[i][k];
+            }
+        );
+        // Copy first K elements (now sorted) to neighbor matrix.
+        copy(row.begin(), row.begin() + K, neighbor[i]);
+    }
+    return neighbor;
+}
+
+/**
+ * Calculates a greedy TSP tour starting at city u.
+ *
+ * This is the naive algorithm given in the Kattis problem description.
+ *
+ * @param d Distance matrix.
+ * @param u Start city of tour.
+ * @return Greedy TSP tour.
+ */
+inline vector<uint16_t> greedy(const Matrix<uint32_t>& d, size_t u) {
+    size_t N = d.rows();
+    vector<uint16_t> tour(N);
+    vector<bool> used(N, false);
+    tour[0] = u;
+    used[u] = true;
+    for (size_t i = 1; i < N; ++i) {
+        // Find k, the closest city to the (i - 1):th city in tour.
+        int32_t k = -1;
+        for (uint16_t j = 0; j < N; ++j) {
+            if (!used[j] && (k == -1 || d[tour[i-1]][j] < d[tour[i-1]][k])) {
+                k = j;
+            }
+        }
+        tour[i] = k;
+        used[k] = true;
+    }
+    return tour;
 }
 
 /**
