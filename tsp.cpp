@@ -490,7 +490,7 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
     uint32_t max = 0;
     for (uint16_t i = 0; i < N; ++i) {
         max = std::max(max, d[i][(i + 1) % N]); // Maximum distance in tour.
-        position[tour[i]] = i;                  // tour[i] is j:th city in tour.
+        position[tour[i]] = i;                  // tour[i] is i:th city in tour.
     }
 
     // Optimize tour with 2-opt.
