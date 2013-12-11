@@ -30,27 +30,27 @@ const static size_t MAX_K = 20;
  */
 
 // Return the current time.
-static inline std::chrono::time_point<std::chrono::high_resolution_clock> now() {
-    return std::chrono::high_resolution_clock::now();
+static inline chrono::time_point<chrono::high_resolution_clock> now() {
+    return chrono::high_resolution_clock::now();
 }
 
 // Output stream operator for durations.
 template<typename T, typename E>
 inline ostream& operator<<(ostream& out, const chrono::duration<T, E>& d) {
-    out << chrono::duration_cast<std::chrono::milliseconds>(d).count() << " ms";
+    out << chrono::duration_cast<chrono::milliseconds>(d).count() << " ms";
     return out;
 }
 
 // 3-argument maximum function.
 template<typename T>
 static inline T maximum(const T& a, const T& b, const T& c) {
-    return std::max(a, std::max(b, c));
+    return max(a, max(b, c));
 }
 
 // 4-argument maximum function.
 template<typename T>
 static inline T maximum(const T& a, const T& b, const T& c, const T& d) {
-    return std::max(a, std::max(b, std::max(c, d)));
+    return max(a, max(b, max(c, d)));
 }
 
 /**
@@ -121,7 +121,7 @@ Matrix<uint16_t> createNeighborsMatrix(const Matrix<uint32_t>& d, size_t K) {
     size_t M = d.cols() - 1;
     K = min(M, K);
     Matrix<uint16_t> neighbor(N, K);
-    std::vector<uint16_t> row(M); // For sorting.
+    vector<uint16_t> row(M); // For sorting.
 
     for (size_t i = 0; i < N; ++i) {
         // Fill row with 0, 1, ..., i - 1, i + 1, ..., M - 1.
@@ -549,7 +549,7 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
         }
 
         // Collect statistics.
-        totalTime += chrono::duration_cast<std::chrono::milliseconds>(now() - start);
+        totalTime += chrono::duration_cast<chrono::milliseconds>(now() - start);
         averageTime = totalTime / (i + 1);
     }
 
