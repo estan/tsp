@@ -116,10 +116,10 @@ inline void reverse(vector<uint16_t> &tour, size_t start, size_t end,
 /**
  * Order three edges by tour position.
  *
- * This function sets edges AB, CD, EF to GH, IJ, KL ordered by their tour
- * positions modulo the tour length (given in G_i, H_i et.c). This is a
- * helper function for the inner loop of threeOpt(...). GH, IJ and KL are
- * assumed to be disjoint.
+ * This function takes as input three disjoint edges GH, IJ and KL, and their
+ * positions in the tour (G_i, H_i, ..., L_i), and sets AB, CD and EF, and
+ * associated tour indices A_i, B_i, ..., F_i, to be the input edges in tour
+ * order.
  *
  * E.g if GH, IJ and KL have the order ..->GH->..->IJ->..->KL->.., then
  * AB = GH, CD = IJ, EF = KL, else AB = IJ, CD = GH, EF = KL.
