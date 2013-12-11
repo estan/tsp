@@ -123,6 +123,8 @@ inline void reverse(vector<uint16_t> &tour, size_t start, size_t end,
  *
  * E.g if GH, IJ and KL have the order ..->GH->..->IJ->..->KL->.., then
  * AB = GH, CD = IJ, EF = KL, else AB = IJ, CD = GH, EF = KL.
+ *
+ * This is a helper function used in the inner loop of threeOpt(...).
  */
 inline void ordered(
         uint16_t& A, size_t& A_i, uint16_t& B, size_t& B_i,
