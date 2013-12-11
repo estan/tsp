@@ -566,11 +566,8 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
 
 int main(int argc, char *argv[]) {
 
-    // Approximate a TSP tour in ~1950 milliseconds.
-    vector<uint16_t> tour = approximate(cin, now() + chrono::milliseconds(1950));
-
-    // Print the tour.
-    for (auto city : tour) {
+    // Approximate/print a TSP tour in ~1950 milliseconds.
+    for (auto city : approximate(cin, now() + chrono::milliseconds(1950))) {
         cout << city << endl;
     }
 
