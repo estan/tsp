@@ -1,8 +1,10 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 
-#include <vector>
 #include <cstdint>
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
 /**
  * A very simple N x M matrix class.
