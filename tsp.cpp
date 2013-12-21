@@ -477,6 +477,10 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
      * Initialization.
      */
 
+    // Deadline for 3-opt inside main loop is 50 ms before hard deadline.
+    chrono::milliseconds fifty_ms(50);
+    auto threeOptDeadline = deadline - fifty_ms;
+
     // Calculate distance / K-nearest neighbors matrix.
     const Matrix<uint32_t> d = createDistanceMatrix(in);
     const Matrix<uint16_t> neighbor = createNeighborsMatrix(d, MAX_K);
@@ -486,7 +490,7 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
     // Generate initial greedy tour.
     vector<uint16_t> tour = greedy(d);
 
-    // Create max / position for initial 2-opt.
+    // Create max / position for initial 2-opt + 3-opt.
     vector<uint16_t> position(N);
     uint32_t max = 0;
     for (uint16_t i = 0; i < N; ++i) {
@@ -494,20 +498,9 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
         position[tour[i]] = i;                  // tour[i] is i:th city in tour.
     }
 
-    // Optimize tour with 2-opt.
+    // Optimize tour with 2-opt + 3-opt.
     twoOpt(tour, d, neighbor, position, max, min);
-
-    // Some main loop statistics.
-    size_t i = 0;                        // Number of iterations of main loop.
-    chrono::milliseconds totalTime(0);   // Total time spent in main loop.
-    chrono::milliseconds averageTime(0); // Average main loop iteration time.
-
-    // Deadline for 3-opt inside main loop is 50 ms before hard deadline.
-    chrono::milliseconds fifty_ms(50);
-    auto threeOptDeadline = deadline - fifty_ms;
-
-    vector<uint16_t> shortestTour = tour;          // Best tour found.
-    uint64_t shortestTourLength = length(tour, d); // Length of best tour found.
+    threeOpt(tour, d, neighbor, position, max, min, threeOptDeadline);
 
     /*
      * Main loop.
@@ -520,6 +513,15 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
      * until only max(50, 2 * average iteration time) milliseconds remains
      * before deadline, and then pick the shortest tour we found.
      */
+
+    // Some main loop statistics.
+    size_t i = 0;                        // Number of iterations of main loop.
+    chrono::milliseconds totalTime(0);   // Total time spent in main loop.
+    chrono::milliseconds averageTime(0); // Average main loop iteration time.
+
+    vector<uint16_t> shortestTour = tour;          // Best tour found.
+    uint64_t shortestTourLength = length(tour, d); // Length of best tour found.
+
     for (i = 0; (now() + std::max(fifty_ms, 2 * averageTime)) < deadline; ++i) {
         auto start = now();
 
