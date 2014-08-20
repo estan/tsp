@@ -60,7 +60,7 @@ static inline T maximum(const T& a, const T& b, const T& c, const T& d) {
  */
 uint32_t minDistance(const Matrix<uint32_t>& d) {
     size_t N = d.rows();
-    uint32_t min = numeric_limits<size_t>::max();
+    uint32_t min = numeric_limits<uint32_t>::max();
     for (size_t i = 0; i < N; ++i) {
         for (size_t j = 0; j < N; ++j) {
             if (i != j)
