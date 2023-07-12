@@ -498,17 +498,13 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
         position[tour[i]] = i;                  // tour[i] is i:th city in tour.
     }
 
-    // Optimize tour with 2-opt + 3-opt.
-    twoOpt(tour, d, neighbor, position, max, min);
-    threeOpt(tour, d, neighbor, position, max, min, threeOptDeadline);
-
     /*
      * Main loop.
      *
      * We repeatedly
      *
-     *   1) "Kick" the tour with a random 4-exchange.
-     *   2) Optimize the tour with 2-opt + 3-opt.
+     *   1) Optimize the tour with 2-opt + 3-opt.
+     *   2) "Kick" the tour with a random 4-exchange.
      *
      * until only max(50, 2 * average iteration time) milliseconds remains
      * before deadline, and then pick the shortest tour we found.
@@ -525,6 +521,17 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
     for (i = 0; (now() + std::max(fifty_ms, 2 * averageTime)) < deadline; ++i) {
         auto start = now();
 
+        // Optimize tour with 2-opt + 3-opt.
+        twoOpt(tour, d, neighbor, position, max, min);
+        threeOpt(tour, d, neighbor, position, max, min, threeOptDeadline);
+
+        uint64_t tourLength = length(tour, d);
+        if (tourLength < shortestTourLength) {
+            // Shorter tour found.
+            shortestTour = tour;
+            shortestTourLength = tourLength;
+        }
+
         if (N >= 8) {
             // Perform random 4-opt "double bridge" move.
             tour = doubleBridge(tour);
@@ -538,17 +545,6 @@ vector<uint16_t> approximate(istream &in, const chrono::time_point<T>& deadline)
         for (uint16_t j = 0; j < N; ++j) {
             max = std::max(max, d[tour[j]][tour[(j + 1) % N]]);
             position[tour[j]] = j;
-        }
-
-        // Optimize tour with 2-opt + 3-opt.
-        twoOpt(tour, d, neighbor, position, max, min);
-        threeOpt(tour, d, neighbor, position, max, min, threeOptDeadline);
-
-        uint64_t tourLength = length(tour, d);
-        if (tourLength < shortestTourLength) {
-            // Shorter tour found.
-            shortestTour = tour;
-            shortestTourLength = tourLength;
         }
 
         // Collect statistics.
